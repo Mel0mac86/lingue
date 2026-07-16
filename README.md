@@ -81,9 +81,12 @@ Apri con **Expo Go** (Android/iOS) scansionando il QR code, oppure `npx expo sta
 L'app si pubblica come **PWA su GitHub Pages** ad ogni push (workflow
 `.github/workflows/deploy-web.yml`):
 
-1. Assicurati che GitHub Pages sia attivo: repo → **Settings → Pages →
-   Source: GitHub Actions** (il workflow prova ad attivarlo da solo).
-2. Apri **https://mel0mac86.github.io/lingue/** in Safari sull'iPhone.
+1. **Una sola volta**: attiva GitHub Pages dal repo su github.com →
+   **Settings → Pages → Build and deployment → Source: "Deploy from a
+   branch" → Branch: `gh-pages` / `/ (root)` → Save**.
+   (Il workflow pubblica già il sito sul branch `gh-pages` ad ogni push;
+   questo passaggio dice a GitHub di servirlo.)
+2. Dopo ~1 minuto apri **https://mel0mac86.github.io/lingue/** in Safari sull'iPhone.
 3. Tocca **Condividi (□↑) → "Aggiungi alla schermata Home"**.
 4. Lingue appare come un'app vera: icona, schermo intero, tutto funzionante
    (microfono incluso, iOS ≥ 16.4).
