@@ -1,0 +1,156 @@
+import React, { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTheme } from '../theme';
+import { useApp } from '../state/AppContext';
+import { Body, Button, Card, Chip, Muted, SectionTitle } from '../components/ui';
+import { getGroqApiKey, setGroqApiKey } from '../services/config';
+import { languageByCode } from '../content/languages';
+import type { RootStackParamList } from '../navigation/types';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+export function ProfileScreen() {
+  const t = useTheme();
+  const nav = useNavigation<Nav>();
+  const { profile, settings, updateSettings, updateProfile, resetAll } = useApp();
+  const [keyInput, setKeyInput] = useState('');
+  const [keySet, setKeySet] = useState(false);
+
+  useEffect(() => {
+    getGroqApiKey().then((k) => setKeySet(!!k));
+  }, []);
+
+  if (!profile) return null;
+  const lang = languageByCode(profile.targetLanguage);
+
+  const saveKey = async () => {
+    const k = keyInput.trim();
+    await setGroqApiKey(k || null);
+    setKeySet(!!k || !!process.env.EXPO_PUBLIC_GROQ_API_KEY);
+    setKeyInput('');
+    Alert.alert('Fatto', k ? 'Chiave API salvata sul dispositivo.' : 'Chiave API rimossa.');
+  };
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: t.colors.background }}
+      contentContainerStyle={{ padding: t.spacing.lg, paddingBottom: 48 }}
+    >
+      <View style={{ alignItems: 'center', marginTop: 8, marginBottom: 16 }}>
+        <Text style={{ fontSize: 56 }}>🙋</Text>
+        <SectionTitle style={{ marginBottom: 0 }}>{profile.name}</SectionTitle>
+        <Muted>
+          {profile.age} anni · studia {lang.name} {lang.flag} · livello {profile.level}
+        </Muted>
+      </View>
+
+      {/* Premium */}
+      <Pressable onPress={() => nav.navigate('Premium')}>
+        <Card style={{
+          marginBottom: 12, backgroundColor: profile.premium ? `${t.colors.gold}18` : t.colors.surfaceAlt,
+          borderColor: t.colors.gold,
+        }}
+        >
+          <Body style={{ fontWeight: '800' }}>
+            {profile.premium ? '👑 Sei Premium!' : '👑 Passa a Premium'}
+          </Body>
+          <Muted>
+            {profile.premium
+              ? 'Conversazioni illimitate, tutti gli avatar, tutte le lingue e tutti gli scenari.'
+              : 'Conversazioni illimitate, tutti gli scenari, analisi avanzata della pronuncia e report dettagliati.'}
+          </Muted>
+        </Card>
+      </Pressable>
+
+      {/* Theme */}
+      <Card style={{ marginBottom: 12 }}>
+        <Body style={{ fontWeight: '800', marginBottom: 8 }}>🎨 Tema</Body>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+          {([['light', '☀️ Chiaro'], ['dark', '🌙 Scuro'], ['system', '📱 Sistema']] as const).map(([mode, label]) => (
+            <Chip
+              key={mode}
+              label={label}
+              selected={settings.themeMode === mode}
+              onPress={() => updateSettings({ themeMode: mode })}
+            />
+          ))}
+        </View>
+      </Card>
+
+      {/* Voice */}
+      <Card style={{ marginBottom: 12 }}>
+        <Body style={{ fontWeight: '800', marginBottom: 8 }}>🔊 Voce dell’avatar</Body>
+        <Pressable onPress={() => updateSettings({ ttsEnabled: !settings.ttsEnabled })}>
+          <Body>{settings.ttsEnabled ? '✅ Voce attiva' : '⬜ Voce disattivata'}</Body>
+        </Pressable>
+        <Muted style={{ marginTop: 8, marginBottom: 4 }}>Velocità di lettura</Muted>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+          {([[0.75, '🐢 Lenta'], [0.95, '🚶 Normale'], [1.1, '🏃 Veloce']] as const).map(([rate, label]) => (
+            <Chip
+              key={rate}
+              label={label}
+              selected={Math.abs(settings.ttsRate - rate) < 0.01}
+              onPress={() => updateSettings({ ttsRate: rate })}
+            />
+          ))}
+        </View>
+      </Card>
+
+      {/* AI settings */}
+      <Card style={{ marginBottom: 12 }}>
+        <Body style={{ fontWeight: '800', marginBottom: 4 }}>🤖 Impostazioni AI</Body>
+        <Muted style={{ marginBottom: 10 }}>
+          Le conversazioni usano Groq (chat + riconoscimento vocale). Inserisci la tua
+          chiave API personale: viene salvata SOLO su questo dispositivo.
+          {keySet ? '\n\n✅ Chiave configurata.' : '\n\n⚠️ Nessuna chiave configurata: le funzioni AI sono disattivate.'}
+        </Muted>
+        <TextInput
+          value={keyInput}
+          onChangeText={setKeyInput}
+          placeholder="gsk_…"
+          placeholderTextColor={t.colors.textMuted}
+          autoCapitalize="none"
+          autoCorrect={false}
+          secureTextEntry
+          style={{
+            borderWidth: 1.5, borderColor: t.colors.border, borderRadius: 12,
+            padding: 12, color: t.colors.text, backgroundColor: t.colors.surface,
+            fontSize: 15 * t.fontScale, marginBottom: 10,
+          }}
+        />
+        <Button title="Salva chiave" variant="secondary" onPress={saveKey} />
+      </Card>
+
+      {/* Daily goal */}
+      <Card style={{ marginBottom: 12 }}>
+        <Body style={{ fontWeight: '800', marginBottom: 8 }}>🎯 Obiettivo giornaliero</Body>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+          {[5, 10, 15, 30].map((m) => (
+            <Chip
+              key={m}
+              label={`${m} min`}
+              selected={profile.dailyGoalMinutes === m}
+              onPress={() => updateProfile({ dailyGoalMinutes: m })}
+            />
+          ))}
+        </View>
+      </Card>
+
+      <Button
+        title="Ricomincia da zero"
+        variant="danger"
+        onPress={() => Alert.alert(
+          'Ricominciare?',
+          'Perderai profilo e progressi salvati su questo dispositivo.',
+          [
+            { text: 'Annulla', style: 'cancel' },
+            { text: 'Sì, cancella tutto', style: 'destructive', onPress: resetAll },
+          ],
+        )}
+        style={{ marginTop: 8 }}
+      />
+    </ScrollView>
+  );
+}

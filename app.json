@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Lingue",
+    "slug": "lingue",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Lingue usa il microfono per le conversazioni vocali con gli avatar AI e per valutare la tua pronuncia."
+      }
+    },
+    "android": {
+      "permissions": ["android.permission.RECORD_AUDIO"],
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
