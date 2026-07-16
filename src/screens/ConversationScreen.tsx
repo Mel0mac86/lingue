@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme';
 import { useApp } from '../state/AppContext';
-import { Avatar, type AvatarMood } from '../components/Avatar';
+import { Avatar3D, type AvatarMood } from '../components/Avatar3D';
 import { ChatBubble } from '../components/ChatBubble';
 import { Button, Muted } from '../components/ui';
 import { avatarById, avatarForRole, AVATARS } from '../content/avatars';
@@ -201,7 +201,7 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
     >
       {/* Avatar stage */}
       <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
-        <Avatar def={avatar} speaking={speaking} mood={mood} size={150} />
+        <Avatar3D def={avatar} speaking={speaking} mood={mood} size={150} />
       </View>
 
       {/* Transcript */}

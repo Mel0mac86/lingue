@@ -80,13 +80,21 @@ function extractJson(raw: string): string {
 export async function transcribeAudio(fileUri: string, languageTag: string): Promise<string> {
   const key = await requireKey();
   const form = new FormData();
-  const ext = fileUri.split('.').pop() || 'm4a';
-  // React Native FormData accepts {uri, name, type} file descriptors.
-  form.append('file', {
-    uri: fileUri,
-    name: `speech.${ext}`,
-    type: `audio/${ext === 'caf' ? 'x-caf' : ext}`,
-  } as unknown as Blob);
+  if (typeof document !== 'undefined') {
+    // Web (incl. iPhone Safari/PWA): the recording URI is a blob: URL.
+    const blob = await (await fetch(fileUri)).blob();
+    const mime = blob.type || 'audio/webm';
+    const ext = mime.includes('mp4') ? 'mp4' : mime.includes('webm') ? 'webm' : 'wav';
+    form.append('file', new File([blob], `speech.${ext}`, { type: mime }));
+  } else {
+    // React Native FormData accepts {uri, name, type} file descriptors.
+    const ext = fileUri.split('.').pop() || 'm4a';
+    form.append('file', {
+      uri: fileUri,
+      name: `speech.${ext}`,
+      type: `audio/${ext === 'caf' ? 'x-caf' : ext}`,
+    } as unknown as Blob);
+  }
   form.append('model', GROQ_STT_MODEL);
   form.append('language', languageTag.split('-')[0]);
   form.append('response_format', 'json');

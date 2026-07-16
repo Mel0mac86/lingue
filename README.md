@@ -30,7 +30,7 @@ Ogni lezione segue sempre lo stesso flusso:
 Gli esercizi sbagliati vengono **riproposti a fine argomento** finché non sono risolti.
 
 ### Conversazione con avatar AI
-- Avatar animato su schermo (respiro, battito di ciglia, **sincronizzazione labiale** durante il parlato, espressioni)
+- **Avatar 3D** (Three.js) su schermo: respiro, sguardo che si muove, battito di ciglia, **sincronizzazione labiale** durante il parlato, espressioni legate all'umore — funziona su iOS/Android (expo-gl) e sul web (WebGL)
 - Parla in modo naturale, fa domande, si adatta al livello, **usa il tuo nome**
 - Voce naturale (TTS) + riconoscimento vocale (registrazione → **Groq Whisper**)
 - Feedback con punteggi di **pronuncia, grammatica, fluidità, vocabolario** e suggerimenti
@@ -76,6 +76,20 @@ npx expo start
 
 Apri con **Expo Go** (Android/iOS) scansionando il QR code, oppure `npx expo start --web`.
 
+## 📱 Installa su iPhone (senza App Store)
+
+L'app si pubblica come **PWA su GitHub Pages** ad ogni push (workflow
+`.github/workflows/deploy-web.yml`):
+
+1. Assicurati che GitHub Pages sia attivo: repo → **Settings → Pages →
+   Source: GitHub Actions** (il workflow prova ad attivarlo da solo).
+2. Apri **https://mel0mac86.github.io/lingue/** in Safari sull'iPhone.
+3. Tocca **Condividi (□↑) → "Aggiungi alla schermata Home"**.
+4. Lingue appare come un'app vera: icona, schermo intero, tutto funzionante
+   (microfono incluso, iOS ≥ 16.4).
+
+Al primo avvio inserisci la chiave Groq in **Profilo → Impostazioni AI**.
+
 > ⚠️ **Sicurezza**: non committare MAI chiavi API. Il file `.env` è gitignorato.
 > Se una chiave è stata esposta, revocala su console.groq.com e generane una nuova.
 
@@ -107,9 +121,11 @@ src/
 **Aggiungere una lingua** = una riga in `src/content/languages.ts`: il
 curriculum è indipendente dalla lingua e le lezioni vengono generate dall'AI.
 
-**Avatar 3D**: il renderer è isolato in `components/Avatar.tsx` (attualmente
-vettoriale animato con lip-sync); può essere sostituito con un avatar 3D
-(Three.js / Ready Player Me) senza toccare le schermate.
+**Avatar 3D**: renderer procedurale Three.js in `components/Avatar3D.tsx`
+(react-three-fiber: stessa scena su nativo e web). Il vecchio avatar
+vettoriale 2D resta in `components/Avatar.tsx` come fallback. Il passo
+successivo naturale è un modello GLB fotorealistico (Ready Player Me) con
+morph target per i visemi: la scena è già isolata dietro questo componente.
 
 ## 🔌 Integrazione Firebase (opzionale)
 
