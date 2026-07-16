@@ -20,9 +20,9 @@ interface RawLesson {
   expressions: { phrase: string; translation: string; usage: string }[];
   grammar: { title: string; explanation: string; examples: { sample: string; translation: string }[] }[];
   exercises: {
-    kind: 'listening' | 'reading' | 'writing' | 'comprehension' | 'quiz';
+    kind: 'listening' | 'reading' | 'writing' | 'wordbank' | 'comprehension' | 'quiz';
     prompt: string; audioText?: string; passage?: string;
-    choices?: string[]; answer: string; hint?: string;
+    choices?: string[]; words?: string[]; answer: string; hint?: string;
   }[];
   conversationBrief: string;
 }
@@ -53,7 +53,7 @@ async function generateLesson(language: LanguageCode, unit: CurriculumUnit): Pro
     `{"vocabulary":[8 elementi: {"term":"parola in ${lang.nativeName}","translation":"italiano","phonetic":"IPA o romanizzazione","example":"frase in ${lang.nativeName}","exampleTranslation":"italiano"}],`
     + `"expressions":[4: {"phrase":"...","translation":"...","usage":"quando si usa, in italiano"}],`
     + `"grammar":[2: {"title":"...","explanation":"spiegazione SEMPLICE in italiano","examples":[2: {"sample":"...","translation":"..."}]}],`
-    + `"exercises":[10 elementi nell'ordine: 2 kind=listening (con "audioText" nella lingua studiata e 3 "choices"), 1 kind=reading (con "passage" e 3 "choices"), 2 kind=writing (risposta libera breve: "answer" in minuscolo), 1 kind=comprehension (3 "choices"), 4 kind=quiz (3 "choices"). Per le domande a scelta, "answer" è l'INDICE della scelta corretta come stringa ("0","1","2"). "prompt" sempre in italiano.],`
+    + `"exercises":[12 elementi nell'ordine: 2 kind=listening (con "audioText" nella lingua studiata e 3 "choices"), 1 kind=reading (con "passage" e 3 "choices"), 2 kind=writing (risposta libera breve: "answer" in minuscolo), 2 kind=wordbank (prompt: 'Componi la frase: "<frase in italiano>"'; "words" = le parole della frase corretta nella lingua studiata in ordine sparso PIÙ 2 parole distrattore; "answer" = la frase corretta completa), 1 kind=comprehension (3 "choices"), 4 kind=quiz (3 "choices"). Per le domande a scelta, "answer" è l'INDICE della scelta corretta come stringa ("0","1","2"). "prompt" sempre in italiano.],`
     + `"conversationBrief":"istruzioni in italiano per l'avatar: quali vocaboli/espressioni/strutture usare nella conversazione post-lezione"}`,
     `Livello ${unit.level}: adatta rigorosamente lessico e strutture. Esercizi senza ambiguità, una sola risposta corretta.`,
   ].join('\n');

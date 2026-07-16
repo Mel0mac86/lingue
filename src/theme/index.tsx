@@ -2,60 +2,92 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 import type { AgeBand } from '../types';
 
-// Palette: modern blue / teal / white as requested, with a dark counterpart.
+/**
+ * Duolingo-inspired palette: bold flat colours, white surfaces, chunky
+ * rounded corners and "3D" buttons (solid fill + darker bottom edge).
+ */
 export interface ThemeColors {
   background: string;
   surface: string;
   surfaceAlt: string;
+  /** Main CTA green (feather). */
   primary: string;
-  primaryDark: string;
+  primaryEdge: string;
+  /** Secondary actions (macaw blue). */
+  blue: string;
+  blueEdge: string;
   teal: string;
   tealSoft: string;
   text: string;
   textMuted: string;
   border: string;
   success: string;
+  successSoft: string;
   warning: string;
   danger: string;
+  dangerSoft: string;
   gold: string;
   onPrimary: string;
+  locked: string;
 }
 
 const light: ThemeColors = {
-  background: '#F7FAFC',
+  background: '#FFFFFF',
   surface: '#FFFFFF',
-  surfaceAlt: '#EEF4FB',
-  primary: '#2563EB',
-  primaryDark: '#1D4ED8',
-  teal: '#0FA3A3',
-  tealSoft: '#D9F4F2',
-  text: '#0F1E33',
-  textMuted: '#5B6B80',
-  border: '#DDE6F0',
-  success: '#16A34A',
-  warning: '#D97706',
-  danger: '#DC2626',
-  gold: '#EAB308',
+  surfaceAlt: '#F7F7F7',
+  primary: '#58CC02',
+  primaryEdge: '#46A302',
+  blue: '#1CB0F6',
+  blueEdge: '#1899D6',
+  teal: '#00CD9C',
+  tealSoft: '#D7FFF1',
+  text: '#3C3C3C',
+  textMuted: '#777777',
+  border: '#E5E5E5',
+  success: '#58CC02',
+  successSoft: '#D7FFB8',
+  warning: '#FFC800',
+  danger: '#FF4B4B',
+  dangerSoft: '#FFDFE0',
+  gold: '#FFC800',
   onPrimary: '#FFFFFF',
+  locked: '#E5E5E5',
 };
 
 const dark: ThemeColors = {
-  background: '#0B1220',
-  surface: '#121C2E',
-  surfaceAlt: '#1A2740',
-  primary: '#4F8AFA',
-  primaryDark: '#2563EB',
+  background: '#131F24',
+  surface: '#1B2A32',
+  surfaceAlt: '#233842',
+  primary: '#58CC02',
+  primaryEdge: '#3E9A02',
+  blue: '#1CB0F6',
+  blueEdge: '#1487BD',
   teal: '#2DD4BF',
-  tealSoft: '#123B3B',
-  text: '#EDF2F9',
-  textMuted: '#93A3B8',
-  border: '#233350',
-  success: '#4ADE80',
-  warning: '#FBBF24',
-  danger: '#F87171',
-  gold: '#FACC15',
+  tealSoft: '#12403B',
+  text: '#F1F7FB',
+  textMuted: '#9DB2BD',
+  border: '#37505C',
+  success: '#79E135',
+  successSoft: '#20390D',
+  warning: '#FFC800',
+  danger: '#FF6B6B',
+  dangerSoft: '#4A1F22',
+  gold: '#FFD335',
   onPrimary: '#FFFFFF',
+  locked: '#37505C',
 };
+
+/** Cycling accent colours for path units, Duolingo-style. */
+export const UNIT_COLORS = [
+  { main: '#58CC02', edge: '#46A302' }, // green
+  { main: '#1CB0F6', edge: '#1899D6' }, // blue
+  { main: '#CE82FF', edge: '#A568CC' }, // purple
+  { main: '#FF9600', edge: '#CC7800' }, // orange
+  { main: '#00CD9C', edge: '#00A47D' }, // teal
+  { main: '#FF86D0', edge: '#D66BAE' }, // pink
+  { main: '#FF4B4B', edge: '#D63C3C' }, // red
+  { main: '#FFC800', edge: '#D6A800' }, // yellow
+];
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 

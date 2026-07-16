@@ -58,34 +58,33 @@ export function ReviewMistakesScreen({ route, navigation }: RootScreenProps<'Rev
     );
   }
 
+  if (done || queue.length === 0) {
+    return (
+      <ScrollView
+        style={{ flex: 1, backgroundColor: t.colors.background }}
+        contentContainerStyle={{ padding: t.spacing.lg, paddingBottom: 48 }}
+      >
+        <Text style={{ fontSize: 52, textAlign: 'center', marginTop: 24 }}>🌟</Text>
+        <SectionTitle style={{ textAlign: 'center' }}>Errori recuperati!</SectionTitle>
+        <Muted style={{ textAlign: 'center', marginBottom: 20 }}>
+          Hai corretto tutti gli esercizi sbagliati (+15 XP). Così si consolida davvero!
+        </Muted>
+        <Button title="Torna al percorso" onPress={() => navigation.popToTop()} />
+      </ScrollView>
+    );
+  }
+
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: t.colors.background }}
-      contentContainerStyle={{ padding: t.spacing.lg, paddingBottom: 48 }}
-    >
-      {done || queue.length === 0 ? (
-        <View>
-          <Text style={{ fontSize: 52, textAlign: 'center', marginTop: 24 }}>🌟</Text>
-          <SectionTitle style={{ textAlign: 'center' }}>Errori recuperati!</SectionTitle>
-          <Muted style={{ textAlign: 'center', marginBottom: 20 }}>
-            Hai corretto tutti gli esercizi sbagliati (+15 XP). Così si consolida davvero!
-          </Muted>
-          <Button title="Torna al percorso" onPress={() => navigation.popToTop()} />
-        </View>
-      ) : (
-        <View>
-          <SectionTitle>✍️ Rifacciamo gli esercizi sbagliati</SectionTitle>
-          <Muted style={{ marginBottom: 12 }}>
-            Ancora {queue.length} da sistemare: se sbagli, l’esercizio torna in coda.
-          </Muted>
-          <ExerciseView
-            key={`${queue[0].id}-${queue.length}`}
-            exercise={queue[0]}
-            speechTag={speechTag}
-            onDone={onDone}
-          />
-        </View>
-      )}
-    </ScrollView>
+    <View style={{ flex: 1, backgroundColor: t.colors.background }}>
+      <Muted style={{ paddingHorizontal: t.spacing.lg, paddingTop: 10, fontWeight: '700' }}>
+        ✍️ Ancora {queue.length} da sistemare: se sbagli, l’esercizio torna in coda.
+      </Muted>
+      <ExerciseView
+        key={`${queue[0].id}-${queue.length}`}
+        exercise={queue[0]}
+        speechTag={speechTag}
+        onDone={onDone}
+      />
+    </View>
   );
 }

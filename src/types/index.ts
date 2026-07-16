@@ -45,7 +45,7 @@ export interface GrammarPoint {
 }
 
 export type ExerciseKind =
-  | 'listening' | 'reading' | 'writing' | 'comprehension' | 'quiz';
+  | 'listening' | 'reading' | 'writing' | 'wordbank' | 'comprehension' | 'quiz';
 
 export interface Exercise {
   id: string;
@@ -57,7 +57,9 @@ export interface Exercise {
   /** Reading passage for reading/comprehension exercises. */
   passage?: string;
   choices?: string[];
-  /** Expected answer: index into choices (as string) or free text. */
+  /** Word bank for 'wordbank' exercises: correct words + distractors, shuffled. */
+  words?: string[];
+  /** Expected answer: index into choices (as string) or free text/sentence. */
   answer: string;
   hint?: string;
 }

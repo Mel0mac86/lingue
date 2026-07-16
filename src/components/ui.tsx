@@ -7,6 +7,10 @@ import { useTheme } from '../theme';
 
 // ─── Buttons ─────────────────────────────────────────────────────────────────
 
+/**
+ * Duolingo-style "3D" button: flat colour with a darker bottom edge that
+ * collapses when pressed. Labels are uppercase and chunky.
+ */
 export function Button({
   title, onPress, variant = 'primary', disabled, loading, style,
 }: {
@@ -18,28 +22,38 @@ export function Button({
   style?: ViewStyle;
 }) {
   const t = useTheme();
-  const bg = variant === 'primary' ? t.colors.primary
-    : variant === 'secondary' ? t.colors.teal
-      : variant === 'danger' ? t.colors.danger
-        : 'transparent';
-  const fg = variant === 'ghost' ? t.colors.primary : t.colors.onPrimary;
+  const palette = {
+    primary: { bg: t.colors.primary, edge: t.colors.primaryEdge, fg: t.colors.onPrimary },
+    secondary: { bg: t.colors.blue, edge: t.colors.blueEdge, fg: t.colors.onPrimary },
+    danger: { bg: t.colors.danger, edge: '#C93A3A', fg: t.colors.onPrimary },
+    ghost: { bg: 'transparent', edge: 'transparent', fg: t.colors.blue },
+  }[variant];
+
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
       style={({ pressed }) => [{
-        backgroundColor: bg,
+        backgroundColor: disabled ? t.colors.locked : palette.bg,
         borderRadius: t.radius,
-        paddingVertical: 14,
+        paddingVertical: 13,
         paddingHorizontal: 20,
         alignItems: 'center',
-        opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
-        borderWidth: variant === 'ghost' ? 1.5 : 0,
-        borderColor: t.colors.primary,
+        borderBottomWidth: variant === 'ghost' ? 2 : pressed || disabled ? 0 : 4,
+        borderColor: variant === 'ghost' ? t.colors.border : disabled ? t.colors.locked : palette.edge,
+        borderWidth: variant === 'ghost' ? 2 : undefined,
+        marginTop: pressed && variant !== 'ghost' ? 4 : 0,
       }, style]}
     >
-      {loading ? <ActivityIndicator color={fg} /> : (
-        <Text style={{ color: fg, fontWeight: '700', fontSize: 16 * t.fontScale }}>
+      {loading ? <ActivityIndicator color={palette.fg} /> : (
+        <Text style={{
+          color: disabled ? t.colors.textMuted : palette.fg,
+          fontWeight: '800',
+          fontSize: 15 * t.fontScale,
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+        }}
+        >
           {title}
         </Text>
       )}
@@ -56,7 +70,7 @@ export function Card({ children, style }: { children: React.ReactNode; style?: V
       backgroundColor: t.colors.surface,
       borderRadius: t.radius,
       padding: t.spacing.lg,
-      borderWidth: 1,
+      borderWidth: 2,
       borderColor: t.colors.border,
     }, style]}
     >
@@ -75,19 +89,20 @@ export function Chip({
     <Pressable
       onPress={onPress}
       style={{
-        backgroundColor: selected ? t.colors.primary : t.colors.surfaceAlt,
-        borderRadius: 999,
-        paddingVertical: 8,
+        backgroundColor: selected ? `${t.colors.blue}22` : t.colors.surface,
+        borderRadius: 14,
+        paddingVertical: 9,
         paddingHorizontal: 14,
         marginRight: 8,
         marginBottom: 8,
-        borderWidth: 1,
-        borderColor: selected ? t.colors.primary : t.colors.border,
+        borderWidth: 2,
+        borderBottomWidth: 3,
+        borderColor: selected ? t.colors.blue : t.colors.border,
       }}
     >
       <Text style={{
-        color: selected ? t.colors.onPrimary : t.colors.text,
-        fontWeight: '600',
+        color: selected ? t.colors.blue : t.colors.text,
+        fontWeight: '700',
         fontSize: 14 * t.fontScale,
       }}
       >
@@ -101,8 +116,8 @@ export function SectionTitle({ children, style }: { children: React.ReactNode; s
   const t = useTheme();
   return (
     <Text style={[{
-      fontSize: 19 * t.fontScale,
-      fontWeight: '800',
+      fontSize: 20 * t.fontScale,
+      fontWeight: '900',
       color: t.colors.text,
       marginBottom: t.spacing.md,
     }, style]}
@@ -136,16 +151,24 @@ export function ProgressBar({ value, color }: { value: number; color?: string })
   const t = useTheme();
   return (
     <View style={{
-      height: 10, borderRadius: 5, backgroundColor: t.colors.surfaceAlt, overflow: 'hidden',
+      height: 14, borderRadius: 7, backgroundColor: t.colors.surfaceAlt, overflow: 'hidden',
+      borderWidth: t.dark ? 0 : 1, borderColor: t.colors.border,
     }}
     >
       <View style={{
         width: `${Math.max(0, Math.min(100, value))}%`,
         height: '100%',
-        borderRadius: 5,
-        backgroundColor: color ?? t.colors.teal,
+        borderRadius: 7,
+        backgroundColor: color ?? t.colors.primary,
       }}
-      />
+      >
+        {/* Duolingo-style glossy stripe */}
+        <View style={{
+          position: 'absolute', top: 3, left: 6, right: 6, height: 3,
+          borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.35)',
+        }}
+        />
+      </View>
     </View>
   );
 }
@@ -185,7 +208,7 @@ export function ScoreRing({
         </View>
       </View>
       <Text style={{
-        marginTop: 4, fontSize: 12 * t.fontScale, color: t.colors.textMuted, fontWeight: '600',
+        marginTop: 4, fontSize: 12 * t.fontScale, color: t.colors.textMuted, fontWeight: '700',
       }}
       >
         {label}
@@ -197,14 +220,73 @@ export function ScoreRing({
 export function StatTile({ emoji, value, label }: { emoji: string; value: string; label: string }) {
   const t = useTheme();
   return (
-    <Card style={{ flex: 1, alignItems: 'center', paddingVertical: t.spacing.md }}>
+    <Card style={{ flex: 1, alignItems: 'center', paddingVertical: t.spacing.md, paddingHorizontal: 4 }}>
       <Text style={{ fontSize: 22 }}>{emoji}</Text>
-      <Text style={{ fontSize: 20 * t.fontScale, fontWeight: '800', color: t.colors.text, marginTop: 2 }}>
+      <Text style={{ fontSize: 20 * t.fontScale, fontWeight: '900', color: t.colors.text, marginTop: 2 }}>
         {value}
       </Text>
-      <Text style={{ fontSize: 11.5 * t.fontScale, color: t.colors.textMuted, textAlign: 'center' }}>
+      <Text style={{ fontSize: 11.5 * t.fontScale, color: t.colors.textMuted, textAlign: 'center', fontWeight: '600' }}>
         {label}
       </Text>
     </Card>
+  );
+}
+
+// ─── Duolingo-style bottom feedback banner ──────────────────────────────────
+
+export function FeedbackBanner({
+  correct, correctAnswer, onContinue,
+}: {
+  correct: boolean;
+  correctAnswer?: string;
+  onContinue: () => void;
+}) {
+  const t = useTheme();
+  return (
+    <View style={{
+      backgroundColor: correct ? t.colors.successSoft : t.colors.dangerSoft,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: t.spacing.lg,
+      paddingBottom: t.spacing.xl,
+    }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+        <View style={{
+          width: 34, height: 34, borderRadius: 17, marginRight: 10,
+          backgroundColor: correct ? t.colors.success : t.colors.danger,
+          alignItems: 'center', justifyContent: 'center',
+        }}
+        >
+          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>
+            {correct ? '✓' : '✗'}
+          </Text>
+        </View>
+        <Text style={{
+          fontSize: 19 * t.fontScale, fontWeight: '900',
+          color: correct ? (t.dark ? t.colors.success : '#58A700') : (t.dark ? t.colors.danger : '#EA2B2B'),
+        }}
+        >
+          {correct ? 'Fantastico!' : 'Non proprio…'}
+        </Text>
+      </View>
+      {!correct && correctAnswer ? (
+        <Text style={{
+          color: t.dark ? t.colors.text : '#EA2B2B',
+          fontSize: 15 * t.fontScale,
+          marginBottom: 10,
+          marginLeft: 44,
+        }}
+        >
+          Risposta corretta: <Text style={{ fontWeight: '800' }}>{correctAnswer}</Text>
+        </Text>
+      ) : null}
+      <Button
+        title="Continua"
+        variant={correct ? 'primary' : 'danger'}
+        onPress={onContinue}
+        style={{ marginTop: 8 }}
+      />
+    </View>
   );
 }

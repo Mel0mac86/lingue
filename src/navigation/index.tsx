@@ -74,7 +74,7 @@ export function RootNavigator() {
         ) : (
           <>
             <Stack.Screen name="Tabs" component={MainTabs} options={{ headerShown: false }} />
-            <Stack.Screen name="Lesson" component={LessonScreen} options={{ title: 'Lezione' }} />
+            <Stack.Screen name="Lesson" component={LessonScreen} options={{ headerShown: false }} />
             <Stack.Screen
               name="Conversation"
               component={ConversationScreen}
