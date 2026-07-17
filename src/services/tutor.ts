@@ -40,6 +40,7 @@ function basePersona(avatar: AvatarDef, profile: UserProfile, targetName: string
   const verse: Record<string, string> = {
     fox: 'Yip yip!', bear: 'Groar!', cat: 'Miaooo!', dog: 'Bau bau!',
     rabbit: 'Squit squit!', panda: 'Mnam mnam!', lion: 'Roooar!', penguin: 'Uek uek!',
+    mouse: 'Squit!', beaver: 'Gnam gnam!', owl: 'Uuh uuh!', raccoon: 'Churr churr!',
   };
   const identity = avatar.species === 'human'
     ? `Sei ${avatar.name}, un avatar AI di Lingue, app per imparare le lingue.`

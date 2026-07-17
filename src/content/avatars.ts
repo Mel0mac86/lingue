@@ -91,6 +91,35 @@ export const ANIMAL_AVATARS: AvatarDef[] = [
   },
 ];
 
+/** Characters inspired by the user's reference art, sculpted procedurally. */
+export const EXTRA_ANIMALS: AvatarDef[] = [
+  {
+    id: 'nanuk', name: 'Nanuk', gender: 'male', ageLook: 10, role: 'friend', species: 'bear',
+    personality: 'orso polare buongustaio: parla spesso di cibo e del suo igloo, grande e tenerissimo',
+    accent: 'neutro', color: '#7FB7D9', skin: '#FFFFFF', hair: '#F2EFE8', emoji: '🐻‍❄️', voicePitch: 0.65,
+  },
+  {
+    id: 'berto', name: 'Berto', gender: 'male', ageLook: 8, role: 'friend', species: 'beaver',
+    personality: 'castoro emotivo e buffissimo dai dentoni: si stupisce di tutto e costruisce dighe',
+    accent: 'neutro', color: '#2F8F6B', skin: '#D9A873', hair: '#8A5A33', emoji: '🦫', voicePitch: 1.1,
+  },
+  {
+    id: 'piuma', name: 'Piuma', gender: 'female', ageLook: 7, role: 'tour_guide', species: 'owl',
+    personality: 'gufetta avventuriera con cappuccio arancione: saggia, curiosa, ama le storie di viaggio',
+    accent: 'neutro', color: '#E8862E', skin: '#F3E9D7', hair: '#8C9BA8', emoji: '🦉', voicePitch: 1.3,
+  },
+  {
+    id: 'tito', name: 'Tito', gender: 'male', ageLook: 9, role: 'friend', species: 'mouse',
+    personality: 'topino furbo ed elegante: battuta pronta e consigli intelligenti',
+    accent: 'neutro', color: '#5B667A', skin: '#EFE5DA', hair: '#8E959D', emoji: '🐭', voicePitch: 1.55,
+  },
+  {
+    id: 'rocco', name: 'Rocco', gender: 'male', ageLook: 12, role: 'colleague', species: 'raccoon',
+    personality: 'procione smart col maglione viola: sembra sempre in videochiamata, parla di tecnologia',
+    accent: 'neutro', color: '#6D3F8E', skin: '#E9E2D8', hair: '#9A938B', emoji: '🦝', voicePitch: 1.05,
+  },
+];
+
 export const ROLE_LABELS: Record<AvatarRole, string> = {
   teacher: 'Insegnante',
   friend: 'Amico/a',
@@ -102,7 +131,7 @@ export const ROLE_LABELS: Record<AvatarRole, string> = {
   doctor: 'Medico',
 };
 
-const ALL = () => [...AVATARS, ...ANIMAL_AVATARS];
+const ALL = () => [...AVATARS, ...ANIMAL_AVATARS, ...EXTRA_ANIMALS];
 
 export const avatarById = (id: string): AvatarDef =>
   ALL().find((a) => a.id === id) ?? AVATARS[0];
@@ -110,6 +139,8 @@ export const avatarById = (id: string): AvatarDef =>
 export const avatarForRole = (role: AvatarRole): AvatarDef =>
   AVATARS.find((a) => a.role === role) ?? AVATARS[0];
 
-/** Kids talk with their chosen animal buddy; everyone else with humans. */
+/** Kids get the animal buddies; everyone else can pick humans AND animals. */
 export const rosterForAgeBand = (band: string): AvatarDef[] =>
-  band === 'kids' ? ANIMAL_AVATARS : AVATARS;
+  band === 'kids'
+    ? [...ANIMAL_AVATARS, ...EXTRA_ANIMALS]
+    : [...AVATARS, ...EXTRA_ANIMALS, ...ANIMAL_AVATARS];

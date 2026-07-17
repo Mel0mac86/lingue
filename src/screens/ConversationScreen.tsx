@@ -229,7 +229,6 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
         height={Math.min(Math.round(windowHeight * 0.44), 460)}
         modelUrl={settings.realisticFaceUrl ?? undefined}
         backdrop={backdrop}
-        photo={settings.photoAvatar}
       />
 
       {/* Transcript */}

@@ -61,7 +61,6 @@ const defaultSettings = (): AppSettings => ({
   groqApiKey: null,
   sfxEnabled: true,
   realisticFaceUrl: null,
-  photoAvatar: null,
 });
 
 interface AppState {

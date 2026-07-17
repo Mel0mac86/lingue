@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../theme';
 import { useApp } from '../state/AppContext';
 import { Body, Button, Card, Chip, Muted, SectionTitle } from '../components/ui';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
 import { getGroqApiKey, setGroqApiKey } from '../services/config';
 import { languageByCode } from '../content/languages';
 import { rosterForAgeBand } from '../content/avatars';
@@ -24,44 +22,6 @@ export function ProfileScreen() {
   const [keyInput, setKeyInput] = useState('');
   const [keySet, setKeySet] = useState(false);
   const [faceUrlInput, setFaceUrlInput] = useState('');
-  const [photoDraft, setPhotoDraft] = useState<{ uri: string; w: number; h: number } | null>(null);
-  const [mouthPos, setMouthPos] = useState<{ x: number; y: number } | null>(null);
-  const [calW, setCalW] = useState(300);
-  const CAL_H = 300;
-
-  const pickPhoto = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.9,
-    });
-    if (res.canceled || !res.assets?.length) return;
-    // Downscale so the data URI fits comfortably in local storage.
-    const resized = await ImageManipulator.manipulateAsync(
-      res.assets[0].uri,
-      [{ resize: { width: 700 } }],
-      { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true },
-    );
-    setPhotoDraft({
-      uri: `data:image/jpeg;base64,${resized.base64}`,
-      w: resized.width,
-      h: resized.height,
-    });
-    setMouthPos(null);
-  };
-
-  /** Map a tap inside the calibration box to image-fraction coordinates. */
-  const onCalibrate = (lx: number, ly: number) => {
-    if (!photoDraft) return;
-    const scale = Math.min(calW / photoDraft.w, CAL_H / photoDraft.h);
-    const dw = photoDraft.w * scale;
-    const dh = photoDraft.h * scale;
-    const ox = (calW - dw) / 2;
-    const oy = (CAL_H - dh) / 2;
-    const x = Math.min(1, Math.max(0, (lx - ox) / dw));
-    const y = Math.min(1, Math.max(0, (ly - oy) / dh));
-    setMouthPos({ x, y });
-  };
-
   useEffect(() => {
     getGroqApiKey().then((k) => setKeySet(!!k));
   }, []);
@@ -128,98 +88,6 @@ export function ProfileScreen() {
               onPress={() => updateProfile({ favoriteAvatarId: a.id })}
             />
           ))}
-        </View>
-      </Card>
-
-      {/* Talking photo avatar */}
-      <Card style={{ marginBottom: 12 }}>
-        <Body style={{ fontWeight: '800', marginBottom: 4 }}>📸 Avatar da foto</Body>
-        <Muted style={{ marginBottom: 10 }}>
-          Carica un'immagine (un personaggio, un disegno, una tua foto…): la
-          animerò come un pupazzo parlante, con la bocca sincronizzata alla
-          voce. Usa solo immagini tue o di cui hai i diritti.
-        </Muted>
-        {settings.photoAvatar && !photoDraft && (
-          <View style={{ alignItems: 'center', marginBottom: 10 }}>
-            <Image
-              source={{ uri: settings.photoAvatar.uri }}
-              style={{ width: 120, height: 120, borderRadius: 16 }}
-              resizeMode="cover"
-            />
-            <Muted style={{ marginTop: 4 }}>✅ Avatar da foto attivo nelle conversazioni</Muted>
-          </View>
-        )}
-        {photoDraft && (
-          <View style={{ marginBottom: 10 }}>
-            <Body style={{ fontWeight: '700', marginBottom: 6, textAlign: 'center' }}>
-              👇 Tocca la bocca del personaggio
-            </Body>
-            <Pressable
-              onLayout={(e) => setCalW(e.nativeEvent.layout.width)}
-              onPress={(e) => {
-                // RN gives locationX/Y; the web DOM event gives offsetX/Y.
-                const ne = e.nativeEvent as unknown as {
-                  locationX?: number; locationY?: number; offsetX?: number; offsetY?: number;
-                };
-                onCalibrate(ne.locationX ?? ne.offsetX ?? 0, ne.locationY ?? ne.offsetY ?? 0);
-              }}
-              style={{ width: '100%', height: CAL_H, backgroundColor: '#111', borderRadius: 12, overflow: 'hidden' }}
-            >
-              <Image
-                source={{ uri: photoDraft.uri }}
-                style={{ width: '100%', height: CAL_H }}
-                resizeMode="contain"
-              />
-              {mouthPos && (
-                <View
-                  pointerEvents="none"
-                  style={{
-                    position: 'absolute',
-                    left: (calW - photoDraft.w * Math.min(calW / photoDraft.w, CAL_H / photoDraft.h)) / 2
-                      + mouthPos.x * photoDraft.w * Math.min(calW / photoDraft.w, CAL_H / photoDraft.h) - 9,
-                    top: (CAL_H - photoDraft.h * Math.min(calW / photoDraft.w, CAL_H / photoDraft.h)) / 2
-                      + mouthPos.y * photoDraft.h * Math.min(calW / photoDraft.w, CAL_H / photoDraft.h) - 9,
-                    width: 18,
-                    height: 18,
-                    borderRadius: 9,
-                    borderWidth: 3,
-                    borderColor: '#FF4B4B',
-                    backgroundColor: 'rgba(255,75,75,0.35)',
-                  }}
-                />
-              )}
-            </Pressable>
-            <Button
-              title="Salva avatar foto"
-              disabled={!mouthPos}
-              onPress={() => {
-                updateSettings({
-                  photoAvatar: {
-                    ...photoDraft, mouthX: mouthPos!.x, mouthY: mouthPos!.y,
-                  },
-                });
-                setPhotoDraft(null);
-                setMouthPos(null);
-              }}
-              style={{ marginTop: 10 }}
-            />
-          </View>
-        )}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <Button
-            title={photoDraft ? 'Scegli un’altra foto' : '📷 Scegli foto'}
-            variant="secondary"
-            onPress={pickPhoto}
-            style={{ flex: 1 }}
-          />
-          {settings.photoAvatar && (
-            <Button
-              title="Rimuovi"
-              variant="ghost"
-              onPress={() => { updateSettings({ photoAvatar: null }); setPhotoDraft(null); }}
-              style={{ flex: 1 }}
-            />
-          )}
         </View>
       </Card>
 

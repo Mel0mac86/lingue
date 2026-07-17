@@ -198,7 +198,8 @@ export type AvatarRole =
 
 /** 'human' renders the realistic head; any other value renders that animal. */
 export type AvatarSpecies =
-  | 'human' | 'fox' | 'bear' | 'cat' | 'dog' | 'rabbit' | 'panda' | 'lion' | 'penguin';
+  | 'human' | 'fox' | 'bear' | 'cat' | 'dog' | 'rabbit' | 'panda' | 'lion' | 'penguin'
+  | 'mouse' | 'beaver' | 'owl' | 'raccoon';
 
 export interface AvatarDef {
   id: string;
@@ -249,16 +250,4 @@ export interface AppSettings {
    * null = stylised procedural heads.
    */
   realisticFaceUrl: string | null;
-  /**
-   * "Talking photo" avatar: a user-picked image animated with breathing,
-   * sway and an overlaid lip-synced mouth at the calibrated position
-   * (fractions of the image). Takes precedence over every other avatar look.
-   */
-  photoAvatar: {
-    uri: string;
-    w: number;
-    h: number;
-    mouthX: number;
-    mouthY: number;
-  } | null;
 }

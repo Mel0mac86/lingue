@@ -1,11 +1,10 @@
 import React, { Suspense, useEffect, useMemo, useRef } from 'react';
-import { Platform, Text, useWindowDimensions, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { AvatarDef, AvatarSpecies } from '../types';
 import { useTheme } from '../theme';
 import { RealisticHead } from './RealisticHead';
-import { PhotoAvatar, type PhotoAvatarConfig } from './PhotoAvatar';
 
 export type AvatarMood = 'neutral' | 'happy' | 'thinking' | 'encouraging';
 
@@ -358,6 +357,16 @@ interface AnimalCfg {
   whiskers?: boolean;
   earInner?: string;
   headScale: [number, number, number];
+  /** Multiplier for round ears (mouse = huge, beaver = tiny). */
+  earScale?: number;
+  /** Light face disc (penguin, owl, raccoon). */
+  facePatch?: string;
+  /** Big front teeth (beaver). */
+  buckTeeth?: boolean;
+  /** Adventurer hood with pompom (owl), in this colour. */
+  hat?: string;
+  /** Elongated pointy snout (mouse). */
+  pointySnout?: boolean;
 }
 
 const ANIMAL_CFG: Record<Exclude<AvatarSpecies, 'human'>, AnimalCfg> = {
@@ -368,7 +377,11 @@ const ANIMAL_CFG: Record<Exclude<AvatarSpecies, 'human'>, AnimalCfg> = {
   rabbit: { ear: 'long', whiskers: true, earInner: '#F6C9D8', headScale: [0.95, 1, 0.95] },
   panda: { ear: 'round', eyePatch: '#2B2B2B', headScale: [1.02, 0.98, 0.98] },
   lion: { ear: 'round', mane: true, headScale: [1, 0.98, 0.98] },
-  penguin: { ear: 'none', beak: true, headScale: [0.96, 1.02, 0.96] },
+  penguin: { ear: 'none', beak: true, facePatch: '#FFFFFF', headScale: [0.96, 1.02, 0.96] },
+  mouse: { ear: 'round', earScale: 1.7, earInner: '#F0B9C4', whiskers: true, pointySnout: true, headScale: [0.95, 0.98, 1] },
+  beaver: { ear: 'round', earScale: 0.62, buckTeeth: true, headScale: [1.04, 0.98, 0.98] },
+  owl: { ear: 'none', beak: true, facePatch: '#F3E9D7', hat: '#E8862E', headScale: [1, 1, 0.96] },
+  raccoon: { ear: 'pointy', eyePatch: '#4A3B33', facePatch: '#E9E2D8', whiskers: true, headScale: [1, 0.96, 0.96] },
 };
 
 function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObject<AnimState> }) {
@@ -423,10 +436,18 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
           </>
         )}
         {cfg.ear === 'round' && [-1, 1].map((s) => (
-          <mesh key={s} position={[0.42 * s, 0.5, -0.05]}>
-            <sphereGeometry args={[0.19, 20, 20]} />
-            <meshStandardMaterial color={cfg.eyePatch ?? fur} roughness={0.85} />
-          </mesh>
+          <group key={s} position={[(0.42 + (cfg.earScale ?? 1) * 0.04 - 0.04) * s, 0.5 + ((cfg.earScale ?? 1) - 1) * 0.12, -0.05]} scale={cfg.earScale ?? 1}>
+            <mesh>
+              <sphereGeometry args={[0.19, 20, 20]} />
+              <meshStandardMaterial color={cfg.eyePatch ?? fur} roughness={0.85} />
+            </mesh>
+            {cfg.earInner && (
+              <mesh position={[0, 0.01, 0.09]} scale={[0.72, 0.72, 0.5]}>
+                <sphereGeometry args={[0.19, 16, 16]} />
+                <meshStandardMaterial color={cfg.earInner} roughness={0.9} />
+              </mesh>
+            )}
+          </group>
         ))}
         {cfg.ear === 'floppy' && [-1, 1].map((s) => (
           <mesh key={s} position={[0.5 * s, 0.25, -0.02]} rotation={[0, 0, 0.9 * s]}>
@@ -457,18 +478,41 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
 
         {/* panda eye patches */}
         {cfg.eyePatch && [-1, 1].map((s) => (
-          <mesh key={s} position={[0.22 * s, 0.14, 0.44]} rotation={[0, 0, 0.5 * s]} scale={[0.8, 1.1, 0.5]}>
+          <mesh
+            key={s}
+            position={[0.22 * s, 0.14, cfg.facePatch ? 0.52 : 0.44]}
+            rotation={[0, 0, 0.5 * s]}
+            scale={[0.8, 1.1, 0.5]}
+          >
             <sphereGeometry args={[0.14, 18, 18]} />
             <meshStandardMaterial color={cfg.eyePatch} roughness={0.85} />
           </mesh>
         ))}
 
-        {/* penguin face patch */}
-        {def.species === 'penguin' && (
+        {/* light face disc (penguin, owl, raccoon) */}
+        {cfg.facePatch && (
           <mesh position={[0, 0.02, 0.3]} scale={[0.82, 0.85, 0.55]}>
             <sphereGeometry args={[R * 0.82, 32, 32]} />
-            <meshStandardMaterial color="#FFFFFF" roughness={0.85} />
+            <meshStandardMaterial color={cfg.facePatch} roughness={0.85} />
           </mesh>
+        )}
+
+        {/* adventurer hood with pompom (owl) */}
+        {cfg.hat && (
+          <>
+            <mesh position={[0, 0.22, -0.04]} scale={[1.06, 0.92, 1.04]}>
+              <sphereGeometry args={[R, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
+              <meshStandardMaterial color={cfg.hat} roughness={0.75} />
+            </mesh>
+            <mesh position={[0, 0.3, 0.5]} rotation={[1.1, 0, 0]} scale={[1.15, 0.5, 0.5]}>
+              <torusGeometry args={[0.42, 0.07, 12, 28, Math.PI]} />
+              <meshStandardMaterial color={cfg.hat} roughness={0.75} />
+            </mesh>
+            <mesh position={[0, 0.78, -0.08]}>
+              <sphereGeometry args={[0.13, 16, 16]} />
+              <meshStandardMaterial color="#F5EFE4" roughness={0.95} />
+            </mesh>
+          </>
         )}
 
         {/* big cute eyes */}
@@ -497,10 +541,19 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
           </group>
         ) : (
           <>
-            <mesh position={[0, -0.18, 0.44]} scale={[1, 0.78, 0.62]}>
+            <mesh
+              position={cfg.pointySnout ? [0, -0.14, 0.5] : [0, -0.18, 0.44]}
+              scale={cfg.pointySnout ? [0.72, 0.6, 1.15] : [1, 0.78, 0.62]}
+            >
               <sphereGeometry args={[0.24, 24, 24]} />
               <meshStandardMaterial color={muzzle} roughness={0.85} />
             </mesh>
+            {cfg.buckTeeth && [-1, 1].map((sgn) => (
+              <mesh key={`tooth${sgn}`} position={[0.042 * sgn, -0.34, 0.55]}>
+                <boxGeometry args={[0.07, 0.13, 0.035]} />
+                <meshStandardMaterial color="#FDFDF4" roughness={0.35} />
+              </mesh>
+            ))}
             <mesh position={[0, -0.08, 0.62]} scale={[1.2, 0.85, 0.8]}>
               <sphereGeometry args={[0.047, 14, 14]} />
               <meshStandardMaterial color="#3B2B22" roughness={0.4} />
@@ -708,7 +761,7 @@ class ModelBoundary extends React.Component<
  *    call-style name tag sits in the corner, for a "real person" feeling.
  */
 export function Avatar3D({
-  def, speaking, mood = 'neutral', size = 220, modelUrl, variant = 'bubble', height, backdrop, photo,
+  def, speaking, mood = 'neutral', size = 220, modelUrl, variant = 'bubble', height, backdrop,
 }: {
   def: AvatarDef;
   speaking: boolean;
@@ -721,11 +774,8 @@ export function Avatar3D({
   height?: number;
   /** Themed 3D environment behind the avatar (stage variant only). */
   backdrop?: BackdropKind;
-  /** "Talking photo" override: animate this user image instead of 3D. */
-  photo?: PhotoAvatarConfig | null;
 }) {
   const t = useTheme();
-  const { width: windowWidth } = useWindowDimensions();
   const anim = useRef<AnimState>({ speaking, mood });
   useEffect(() => { anim.current = { speaking, mood }; }, [speaking, mood]);
   const isHuman = def.species === 'human';
@@ -771,9 +821,7 @@ export function Avatar3D({
         overflow: 'hidden',
       }}
       >
-        {photo
-          ? <PhotoAvatar config={photo} speaking={speaking} width={windowWidth} height={height ?? 340} />
-          : scene}
+        {scene}
         {/* video-call style name tag */}
         <View style={{
           position: 'absolute',
