@@ -1,10 +1,11 @@
 import React, { Suspense, useEffect, useMemo, useRef } from 'react';
-import { Platform, Text, View } from 'react-native';
+import { Platform, Text, useWindowDimensions, View } from 'react-native';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { AvatarDef, AvatarSpecies } from '../types';
 import { useTheme } from '../theme';
 import { RealisticHead } from './RealisticHead';
+import { PhotoAvatar, type PhotoAvatarConfig } from './PhotoAvatar';
 
 export type AvatarMood = 'neutral' | 'happy' | 'thinking' | 'encouraging';
 
@@ -707,7 +708,7 @@ class ModelBoundary extends React.Component<
  *    call-style name tag sits in the corner, for a "real person" feeling.
  */
 export function Avatar3D({
-  def, speaking, mood = 'neutral', size = 220, modelUrl, variant = 'bubble', height, backdrop,
+  def, speaking, mood = 'neutral', size = 220, modelUrl, variant = 'bubble', height, backdrop, photo,
 }: {
   def: AvatarDef;
   speaking: boolean;
@@ -720,8 +721,11 @@ export function Avatar3D({
   height?: number;
   /** Themed 3D environment behind the avatar (stage variant only). */
   backdrop?: BackdropKind;
+  /** "Talking photo" override: animate this user image instead of 3D. */
+  photo?: PhotoAvatarConfig | null;
 }) {
   const t = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const anim = useRef<AnimState>({ speaking, mood });
   useEffect(() => { anim.current = { speaking, mood }; }, [speaking, mood]);
   const isHuman = def.species === 'human';
@@ -767,7 +771,9 @@ export function Avatar3D({
         overflow: 'hidden',
       }}
       >
-        {scene}
+        {photo
+          ? <PhotoAvatar config={photo} speaking={speaking} width={windowWidth} height={height ?? 340} />
+          : scene}
         {/* video-call style name tag */}
         <View style={{
           position: 'absolute',
