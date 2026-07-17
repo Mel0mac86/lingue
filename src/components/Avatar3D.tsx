@@ -32,7 +32,7 @@ interface Rig {
 const LID_OPEN = -1.5;
 const LID_CLOSED = -0.12;
 
-function useHeadRig(anim: React.MutableRefObject<AnimState>): Rig {
+function useHeadRig(anim: React.MutableRefObject<AnimState>, bouncy = false): Rig {
   const rig: Rig = {
     group: useRef<THREE.Group>(null),
     head: useRef<THREE.Group>(null),
@@ -57,6 +57,9 @@ function useHeadRig(anim: React.MutableRefObject<AnimState>): Rig {
 
     if (rig.group.current) {
       rig.group.current.position.y = Math.sin(t * 1.3) * 0.04 - 0.12;
+      // Animals do a playful little bounce while they talk.
+      const squash = bouncy && speaking ? 1 + Math.sin(t * 11) * 0.018 : 1;
+      rig.group.current.scale.y = squash;
     }
     if (rig.head.current) {
       rig.head.current.rotation.y = Math.sin(t * 0.4) * 0.17 + (speaking ? Math.sin(t * 2.1) * 0.03 : 0);
@@ -116,10 +119,10 @@ const irisColorFor = (id: string): string => {
 
 /** Eye with white, iris, pupil, highlight and a skin/fur eyelid on the rig. */
 function Eye({
-  x, y, z, rig, side, lidColor, irisColor, size = 1,
+  x, y, z, rig, side, lidColor, irisColor, size = 1, lashes = false,
 }: {
   x: number; y: number; z: number; rig: Rig; side: 'L' | 'R';
-  lidColor: string; irisColor: string; size?: number;
+  lidColor: string; irisColor: string; size?: number; lashes?: boolean;
 }) {
   const r = 0.088 * size;
   return (
@@ -147,6 +150,13 @@ function Eye({
         <sphereGeometry args={[r * 1.12, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.52]} />
         <meshStandardMaterial color={lidColor} roughness={0.55} />
       </mesh>
+      {/* upper lash line */}
+      {lashes && (
+        <mesh position={[0, 0.012, r * 0.68]} rotation={[0.35, 0, 0]} scale={[1.02, 0.85, 0.55]}>
+          <torusGeometry args={[r * 0.92, 0.011, 6, 20, Math.PI]} />
+          <meshStandardMaterial color="#241610" roughness={0.7} />
+        </mesh>
+      )}
     </group>
   );
 }
@@ -251,8 +261,8 @@ function HumanHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObject
 
         {/* eyes + roaming pupils */}
         <group ref={rig.pupils}>
-          <Eye x={-0.2} y={0.12} z={0.42} rig={rig} side="L" lidColor={skin} irisColor={iris} />
-          <Eye x={0.2} y={0.12} z={0.42} rig={rig} side="R" lidColor={skin} irisColor={iris} />
+          <Eye x={-0.2} y={0.12} z={0.5} rig={rig} side="L" lidColor={skin} irisColor={iris} lashes={isFemale} />
+          <Eye x={0.2} y={0.12} z={0.5} rig={rig} side="R" lidColor={skin} irisColor={iris} lashes={isFemale} />
         </group>
 
         {/* cheeks blush */}
@@ -274,6 +284,13 @@ function HumanHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObject
           <sphereGeometry args={[0.055, 14, 14]} />
           <meshStandardMaterial color={skin} roughness={0.42} />
         </mesh>
+        {/* nostrils */}
+        {[-1, 1].map((s) => (
+          <mesh key={s} position={[0.033 * s, -0.135, 0.585]} scale={[1, 0.7, 0.6]}>
+            <sphereGeometry args={[0.013, 8, 8]} />
+            <meshStandardMaterial color="#6E4634" roughness={0.8} />
+          </mesh>
+        ))}
 
         {/* mouth cavity, tucked inside the head: visible only when the jaw opens */}
         <mesh position={[0, -0.32, 0.33]} scale={[1, 0.65, 0.6]}>
@@ -330,7 +347,7 @@ const ANIMAL_CFG: Record<Exclude<AvatarSpecies, 'human'>, AnimalCfg> = {
 };
 
 function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObject<AnimState> }) {
-  const rig = useHeadRig(anim);
+  const rig = useHeadRig(anim, true);
   const cfg = ANIMAL_CFG[def.species as Exclude<AvatarSpecies, 'human'>];
   const fur = def.hair;
   const muzzle = def.skin;
@@ -431,8 +448,8 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
 
         {/* big cute eyes */}
         <group ref={rig.pupils}>
-          <Eye x={-0.21} y={0.15} z={0.46} rig={rig} side="L" lidColor={cfg.eyePatch ?? fur} irisColor="#2E1D12" size={1.15} />
-          <Eye x={0.21} y={0.15} z={0.46} rig={rig} side="R" lidColor={cfg.eyePatch ?? fur} irisColor="#2E1D12" size={1.15} />
+          <Eye x={-0.21} y={0.15} z={0.52} rig={rig} side="L" lidColor={cfg.eyePatch ?? fur} irisColor="#2E1D12" size={1.15} lashes={def.gender === 'female'} />
+          <Eye x={0.21} y={0.15} z={0.52} rig={rig} side="R" lidColor={cfg.eyePatch ?? fur} irisColor="#2E1D12" size={1.15} lashes={def.gender === 'female'} />
         </group>
 
         {/* brows (subtle fur tufts) */}

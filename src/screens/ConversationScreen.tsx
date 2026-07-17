@@ -99,10 +99,12 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
     speak(clean, {
       languageTag: langDef.speechTag,
       rate: ttsRate,
+      // Each avatar has its own voice: squeaky fox, deep bear, calm doctor…
+      pitch: avatar.voicePitch,
       onStart: () => setSpeaking(true),
       onDone: () => setSpeaking(false),
     });
-  }, [settings.ttsEnabled, langDef.speechTag, ttsRate]);
+  }, [settings.ttsEnabled, langDef.speechTag, ttsRate, avatar.voicePitch]);
 
   const requestReply = useCallback(async (history: ConversationTurn[]) => {
     if (!systemPrompt) return;

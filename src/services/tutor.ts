@@ -37,9 +37,16 @@ function levelRules(level: CEFRLevel | ScenarioDifficulty): string {
 }
 
 function basePersona(avatar: AvatarDef, profile: UserProfile, targetName: string): string {
+  const verse: Record<string, string> = {
+    fox: 'Yip yip!', bear: 'Groar!', cat: 'Miaooo!', dog: 'Bau bau!',
+    rabbit: 'Squit squit!', panda: 'Mnam mnam!', lion: 'Roooar!', penguin: 'Uek uek!',
+  };
   const identity = avatar.species === 'human'
     ? `Sei ${avatar.name}, un avatar AI di Lingue, app per imparare le lingue.`
-    : `Sei ${avatar.name}, un simpatico animale parlante (${avatar.species}) di Lingue, app per imparare le lingue. Ogni tanto fai il verso o un gesto tipico del tuo animale, con moderazione.`;
+    : [
+      `Sei ${avatar.name}, un simpatico animale parlante (${avatar.species}) di Lingue, app per imparare le lingue.`,
+      `Il tuo PRIMO messaggio inizia SEMPRE con il tuo verso: "${verse[avatar.species] ?? 'Ciao!'}". Poi, ogni tanto (non sempre), infila il verso o un gesto buffo tipico del tuo animale.`,
+    ].join(' ');
   return [
     identity,
     `Ruolo: ${ROLE_LABELS[avatar.role]}. Personalità: ${avatar.personality}. Accento: ${avatar.accent}.`,

@@ -207,6 +207,8 @@ export interface AvatarDef {
   skin: string;
   hair: string;
   emoji: string;
+  /** TTS pitch multiplier: >1 higher/funnier (small animals), <1 deeper. */
+  voicePitch: number;
 }
 
 export type ScenarioCategory =
