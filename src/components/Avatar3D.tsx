@@ -112,7 +112,7 @@ function useHeadRig(anim: React.MutableRefObject<AnimState>, bouncy = false): Ri
 }
 
 const irisColorFor = (id: string): string => {
-  const palette = ['#4E76B5', '#5E4632', '#2F2A26', '#4E7A52', '#6B4A2E', '#54626F'];
+  const palette = ['#33475F', '#3B2A1E', '#26221E', '#2E4632', '#4A3220', '#333C4A'];
   let h = 0;
   for (const c of id) h = (h * 31 + c.charCodeAt(0)) % 997;
   return palette[h % palette.length];
@@ -128,20 +128,21 @@ function Eye({
   const r = 0.088 * size;
   return (
     <group position={[x, y, z]}>
+      {/* Toy-style eye: big glossy dark iris with double light catch. */}
       <mesh>
         <sphereGeometry args={[r, 24, 24]} />
-        <meshStandardMaterial color="#FBFBFB" roughness={0.25} />
+        <meshStandardMaterial color="#FFFFFF" roughness={0.12} />
       </mesh>
       <group>
-        <mesh position={[0, 0, r * 0.62]}>
-          <sphereGeometry args={[r * 0.52, 20, 20]} />
-          <meshStandardMaterial color={irisColor} roughness={0.35} />
+        <mesh position={[0, 0, r * 0.34]}>
+          <sphereGeometry args={[r * 0.8, 24, 24]} />
+          <meshStandardMaterial color={irisColor} roughness={0.08} />
         </mesh>
-        <mesh position={[0, 0, r * 0.88]}>
-          <sphereGeometry args={[r * 0.26, 14, 14]} />
-          <meshStandardMaterial color="#101010" roughness={0.15} />
+        <mesh position={[r * 0.3, r * 0.32, r * 0.98]}>
+          <sphereGeometry args={[r * 0.22, 10, 10]} />
+          <meshBasicMaterial color="#FFFFFF" />
         </mesh>
-        <mesh position={[r * 0.22, r * 0.24, r * 1.0]}>
+        <mesh position={[-r * 0.22, -r * 0.26, r * 1.02]}>
           <sphereGeometry args={[r * 0.09, 8, 8]} />
           <meshBasicMaterial color="#FFFFFF" />
         </mesh>
@@ -171,6 +172,7 @@ function HumanHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObject
   const iris = irisColorFor(def.id);
   const isFemale = def.gender === 'female';
   const older = def.ageLook >= 45;
+  const bearded = def.gender === 'male' && (older || def.id === 'jack');
 
   return (
     <group ref={rig.group}>
@@ -251,29 +253,29 @@ function HumanHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObject
         )}
 
         {/* eyebrows */}
-        <mesh ref={rig.browL} position={[-0.2, 0.27, 0.46]} rotation={[0.15, 0, 0.1]} scale={[1, 0.35, 0.4]} userData={{ baseY: 0.27 }}>
+        <mesh ref={rig.browL} position={[-0.2, 0.27, 0.46]} rotation={[0.15, 0, 0.1]} scale={[1, 0.52, 0.45]} userData={{ baseY: 0.27 }}>
           <capsuleGeometry args={[0.035, 0.13, 6, 10]} />
           <meshStandardMaterial color={hair} roughness={0.8} />
         </mesh>
-        <mesh ref={rig.browR} position={[0.2, 0.27, 0.46]} rotation={[0.15, 0, -0.1]} scale={[1, 0.35, 0.4]} userData={{ baseY: 0.27 }}>
+        <mesh ref={rig.browR} position={[0.2, 0.27, 0.46]} rotation={[0.15, 0, -0.1]} scale={[1, 0.52, 0.45]} userData={{ baseY: 0.27 }}>
           <capsuleGeometry args={[0.035, 0.13, 6, 10]} />
           <meshStandardMaterial color={hair} roughness={0.8} />
         </mesh>
 
         {/* eyes + roaming pupils */}
         <group ref={rig.pupils}>
-          <Eye x={-0.2} y={0.12} z={0.5} rig={rig} side="L" lidColor={skin} irisColor={iris} lashes={isFemale} />
-          <Eye x={0.2} y={0.12} z={0.5} rig={rig} side="R" lidColor={skin} irisColor={iris} lashes={isFemale} />
+          <Eye x={-0.2} y={0.12} z={0.5} rig={rig} side="L" lidColor={skin} irisColor={iris} lashes={isFemale} size={1.22} />
+          <Eye x={0.2} y={0.12} z={0.5} rig={rig} side="R" lidColor={skin} irisColor={iris} lashes={isFemale} size={1.22} />
         </group>
 
         {/* cheeks blush */}
         <mesh position={[-0.3, -0.12, 0.4]} scale={[1, 0.7, 0.4]}>
-          <sphereGeometry args={[0.09, 14, 14]} />
-          <meshStandardMaterial color="#E58A80" transparent opacity={isFemale ? 0.3 : 0.15} roughness={1} />
+          <sphereGeometry args={[0.105, 14, 14]} />
+          <meshStandardMaterial color="#F0938A" transparent opacity={isFemale ? 0.5 : 0.32} roughness={1} />
         </mesh>
         <mesh position={[0.3, -0.12, 0.4]} scale={[1, 0.7, 0.4]}>
-          <sphereGeometry args={[0.09, 14, 14]} />
-          <meshStandardMaterial color="#E58A80" transparent opacity={isFemale ? 0.3 : 0.15} roughness={1} />
+          <sphereGeometry args={[0.105, 14, 14]} />
+          <meshStandardMaterial color="#F0938A" transparent opacity={isFemale ? 0.5 : 0.32} roughness={1} />
         </mesh>
 
         {/* nose */}
@@ -308,12 +310,33 @@ function HumanHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObject
           <torusGeometry args={[0.105, 0.02, 8, 22, Math.PI * 0.9]} />
           <meshStandardMaterial color={isFemale ? '#B4433C' : '#A06355'} roughness={0.55} />
         </mesh>
+        {/* mustache (bearded men) */}
+        {bearded && (
+          <mesh position={[0, -0.235, 0.5]} rotation={[0, 0, Math.PI / 2]} scale={[0.5, 1.05, 0.5]}>
+            <capsuleGeometry args={[0.05, 0.17, 8, 14]} />
+            <meshStandardMaterial color={hair} roughness={0.85} />
+          </mesh>
+        )}
         {/* articulated jaw: chin + lower lip */}
         <group ref={rig.jaw} position={[0, -0.2, 0.05]}>
           <mesh position={[0, -0.18, 0.24]} scale={[0.66, 0.45, 0.52]}>
             <sphereGeometry args={[0.35, 24, 24]} />
             <meshStandardMaterial color={skin} roughness={0.45} />
           </mesh>
+          {bearded && (
+            <>
+              <mesh position={[0, -0.26, 0.22]} scale={[0.72, 0.5, 0.55]}>
+                <sphereGeometry args={[0.38, 24, 24]} />
+                <meshStandardMaterial color={hair} roughness={0.9} />
+              </mesh>
+              {[-1, 1].map((sgn) => (
+                <mesh key={`beard${sgn}`} position={[0.28 * sgn, -0.17, 0.28]} scale={[0.45, 0.7, 0.45]}>
+                  <sphereGeometry args={[0.22, 18, 18]} />
+                  <meshStandardMaterial color={hair} roughness={0.9} />
+                </mesh>
+              ))}
+            </>
+          )}
           <mesh position={[0, -0.115, 0.4]} rotation={[0, 0, Math.PI / 2]} scale={[0.34, 0.8, 0.4]}>
             <capsuleGeometry args={[0.05, 0.14, 8, 14]} />
             <meshStandardMaterial color={isFemale ? '#B4433C' : '#A06355'} roughness={0.55} />
@@ -337,9 +360,9 @@ interface AnimalCfg {
 }
 
 const ANIMAL_CFG: Record<Exclude<AvatarSpecies, 'human'>, AnimalCfg> = {
-  fox: { ear: 'pointy', whiskers: true, earInner: '#FFE8D1', headScale: [1, 0.95, 0.95] },
+  fox: { ear: 'pointy', whiskers: true, earInner: '#F6BCC9', headScale: [1, 0.95, 0.95] },
   bear: { ear: 'round', headScale: [1.02, 1, 0.98] },
-  cat: { ear: 'pointy', whiskers: true, earInner: '#F1C7CE', headScale: [1, 0.92, 0.95] },
+  cat: { ear: 'pointy', whiskers: true, earInner: '#F6BCC9', headScale: [1, 0.92, 0.95] },
   dog: { ear: 'floppy', headScale: [1, 0.98, 0.98] },
   rabbit: { ear: 'long', whiskers: true, earInner: '#F6C9D8', headScale: [0.95, 1, 0.95] },
   panda: { ear: 'round', eyePatch: '#2B2B2B', headScale: [1.02, 0.98, 0.98] },
@@ -449,8 +472,8 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
 
         {/* big cute eyes */}
         <group ref={rig.pupils}>
-          <Eye x={-0.21} y={0.15} z={0.52} rig={rig} side="L" lidColor={cfg.eyePatch ?? fur} irisColor="#2E1D12" size={1.15} lashes={def.gender === 'female'} />
-          <Eye x={0.21} y={0.15} z={0.52} rig={rig} side="R" lidColor={cfg.eyePatch ?? fur} irisColor="#2E1D12" size={1.15} lashes={def.gender === 'female'} />
+          <Eye x={-0.21} y={0.15} z={0.52} rig={rig} side="L" lidColor={cfg.eyePatch ?? fur} irisColor="#2E1D12" size={1.5} lashes={def.gender === 'female'} />
+          <Eye x={0.21} y={0.15} z={0.52} rig={rig} side="R" lidColor={cfg.eyePatch ?? fur} irisColor="#2E1D12" size={1.5} lashes={def.gender === 'female'} />
         </group>
 
         {/* brows (subtle fur tufts) */}
@@ -477,8 +500,8 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
               <sphereGeometry args={[0.24, 24, 24]} />
               <meshStandardMaterial color={muzzle} roughness={0.85} />
             </mesh>
-            <mesh position={[0, -0.08, 0.62]} scale={[1.25, 0.8, 0.8]}>
-              <sphereGeometry args={[0.055, 14, 14]} />
+            <mesh position={[0, -0.08, 0.62]} scale={[1.2, 0.85, 0.8]}>
+              <sphereGeometry args={[0.047, 14, 14]} />
               <meshStandardMaterial color="#3B2B22" roughness={0.4} />
             </mesh>
             {/* mouth cavity + idle smile */}
@@ -499,6 +522,14 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
             </group>
           </>
         )}
+
+        {/* toy blush */}
+        {[-1, 1].map((sgn) => (
+          <mesh key={`blush${sgn}`} position={[0.33 * sgn, -0.05, 0.5]} scale={[1, 0.72, 0.35]}>
+            <sphereGeometry args={[0.085, 14, 14]} />
+            <meshStandardMaterial color="#F58EA0" transparent opacity={0.55} roughness={1} />
+          </mesh>
+        ))}
 
         {/* whiskers */}
         {cfg.whiskers && (
