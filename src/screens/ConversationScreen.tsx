@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView,
-  Text, TextInput, View,
+  Text, TextInput, useWindowDimensions, View,
 } from 'react-native';
 import { useTheme } from '../theme';
 import { useApp } from '../state/AppContext';
@@ -34,6 +34,7 @@ type MicState = 'idle' | 'recording' | 'transcribing';
 export function ConversationScreen({ route, navigation }: RootScreenProps<'Conversation'>) {
   const params = route.params;
   const t = useTheme();
+  const { height: windowHeight } = useWindowDimensions();
   const { profile, settings } = useApp();
   const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
   const [turns, setTurns] = useState<ConversationTurn[]>([]);
@@ -211,16 +212,15 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={{ flex: 1, backgroundColor: t.colors.background }}
     >
-      {/* Avatar stage */}
-      <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
-        <Avatar3D
-          def={avatar}
-          speaking={speaking}
-          mood={mood}
-          size={150}
-          modelUrl={settings.realisticFaceUrl ?? undefined}
-        />
-      </View>
+      {/* Avatar stage: video-call style, the face fills the screen */}
+      <Avatar3D
+        def={avatar}
+        speaking={speaking}
+        mood={mood}
+        variant="stage"
+        height={Math.min(Math.round(windowHeight * 0.44), 460)}
+        modelUrl={settings.realisticFaceUrl ?? undefined}
+      />
 
       {/* Transcript */}
       <ScrollView

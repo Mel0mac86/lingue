@@ -301,12 +301,12 @@ function HumanHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObject
         {/* upper lip: thin horizontal capsule */}
         <mesh position={[0, -0.262, 0.465]} rotation={[0, 0, Math.PI / 2]} scale={[0.4, 0.95, 0.45]}>
           <capsuleGeometry args={[0.05, 0.15, 8, 14]} />
-          <meshStandardMaterial color={isFemale ? '#C05B52' : '#B07A6A'} roughness={0.55} />
+          <meshStandardMaterial color={isFemale ? '#B4433C' : '#A06355'} roughness={0.55} />
         </mesh>
         {/* idle smile: soft arc under the lips */}
         <mesh ref={rig.smile} position={[0, -0.265, 0.46]} rotation={[0.12, 0, Math.PI]} scale={[0.95, 0.6, 0.4]}>
           <torusGeometry args={[0.105, 0.02, 8, 22, Math.PI * 0.9]} />
-          <meshStandardMaterial color={isFemale ? '#C05B52' : '#B07A6A'} roughness={0.55} />
+          <meshStandardMaterial color={isFemale ? '#B4433C' : '#A06355'} roughness={0.55} />
         </mesh>
         {/* articulated jaw: chin + lower lip */}
         <group ref={rig.jaw} position={[0, -0.2, 0.05]}>
@@ -316,7 +316,7 @@ function HumanHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObject
           </mesh>
           <mesh position={[0, -0.115, 0.4]} rotation={[0, 0, Math.PI / 2]} scale={[0.34, 0.8, 0.4]}>
             <capsuleGeometry args={[0.05, 0.14, 8, 14]} />
-            <meshStandardMaterial color={isFemale ? '#C05B52' : '#B07A6A'} roughness={0.55} />
+            <meshStandardMaterial color={isFemale ? '#B4433C' : '#A06355'} roughness={0.55} />
           </mesh>
         </group>
       </group>
@@ -534,9 +534,14 @@ class ModelBoundary extends React.Component<
  * 3D talking avatar (Three.js via react-three-fiber): realistic-styled human
  * heads, or animal buddies for the kids path. Works on iOS/Android (expo-gl)
  * and on web (WebGL) — Metro picks the right fiber entry automatically.
+ *
+ * Two presentations:
+ *  - 'bubble' (default): the classic circular avatar with the name below;
+ *  - 'stage': a full-width video-call view — the face fills the frame and a
+ *    call-style name tag sits in the corner, for a "real person" feeling.
  */
 export function Avatar3D({
-  def, speaking, mood = 'neutral', size = 220, modelUrl,
+  def, speaking, mood = 'neutral', size = 220, modelUrl, variant = 'bubble', height,
 }: {
   def: AvatarDef;
   speaking: boolean;
@@ -544,6 +549,9 @@ export function Avatar3D({
   size?: number;
   /** Optional photorealistic GLB (Ready Player Me / ARKit blendshapes). */
   modelUrl?: string;
+  variant?: 'bubble' | 'stage';
+  /** Stage height (stage variant only). */
+  height?: number;
 }) {
   const t = useTheme();
   const anim = useRef<AnimState>({ speaking, mood });
@@ -551,6 +559,71 @@ export function Avatar3D({
   const isHuman = def.species === 'human';
   // GLB loading relies on web APIs (fetch/Image): native uses the procedural head.
   const useRealistic = isHuman && !!modelUrl && Platform.OS === 'web';
+  const isStage = variant === 'stage';
+
+  const scene = (
+    <Canvas
+      // Stage: the camera sits much closer, like a video call. Procedural
+      // heads are bigger than the GLB scan, so they get a bit more distance.
+      camera={isStage
+        ? (useRealistic
+          ? { position: [0, 0.06, 1.85], fov: 34 }
+          : { position: [0, 0.02, 2.6], fov: 36 })
+        : { position: [0, 0.02, 3.05], fov: 40 }}
+      gl={{ antialias: true }}
+      style={isStage ? { width: '100%', height: '100%' } : { width: size, height: size }}
+    >
+      <hemisphereLight args={['#FFFFFF', '#B8C4D6', 0.75]} />
+      <directionalLight position={[2.2, 2.8, 3.6]} intensity={1.25} />
+      <directionalLight position={[-2.6, 0.6, 2.2]} intensity={0.35} />
+      <directionalLight position={[0, 1.5, -3]} intensity={0.5} color={def.color} />
+      {useRealistic ? (
+        <ModelBoundary fallback={<HumanHead def={def} anim={anim} />}>
+          <Suspense fallback={<HumanHead def={def} anim={anim} />}>
+            <RealisticHead url={modelUrl!} anim={anim} />
+          </Suspense>
+        </ModelBoundary>
+      ) : isHuman
+        ? <HumanHead def={def} anim={anim} />
+        : <AnimalHead def={def} anim={anim} />}
+    </Canvas>
+  );
+
+  if (isStage) {
+    return (
+      <View style={{
+        width: '100%',
+        height: height ?? 340,
+        backgroundColor: t.dark ? '#101826' : '#E8EFF8',
+        overflow: 'hidden',
+      }}
+      >
+        {scene}
+        {/* video-call style name tag */}
+        <View style={{
+          position: 'absolute',
+          left: 12,
+          bottom: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: 'rgba(10, 16, 28, 0.62)',
+          borderRadius: 12,
+          paddingHorizontal: 12,
+          paddingVertical: 7,
+        }}
+        >
+          <View style={{
+            width: 9, height: 9, borderRadius: 5, marginRight: 7,
+            backgroundColor: speaking ? '#4ADE80' : 'rgba(255,255,255,0.45)',
+          }}
+          />
+          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14.5 * t.fontScale }}>
+            {def.emoji} {def.name}{speaking ? ' · sta parlando…' : ''}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={{ alignItems: 'center' }}>
@@ -564,25 +637,7 @@ export function Avatar3D({
         backgroundColor: t.colors.surfaceAlt,
       }}
       >
-        <Canvas
-          camera={{ position: [0, 0.02, 3.05], fov: 40 }}
-          gl={{ antialias: true }}
-          style={{ width: size, height: size }}
-        >
-          <hemisphereLight args={['#FFFFFF', '#B8C4D6', 0.75]} />
-          <directionalLight position={[2.2, 2.8, 3.6]} intensity={1.25} />
-          <directionalLight position={[-2.6, 0.6, 2.2]} intensity={0.35} />
-          <directionalLight position={[0, 1.5, -3]} intensity={0.5} color={def.color} />
-          {useRealistic ? (
-            <ModelBoundary fallback={<HumanHead def={def} anim={anim} />}>
-              <Suspense fallback={<HumanHead def={def} anim={anim} />}>
-                <RealisticHead url={modelUrl!} anim={anim} />
-              </Suspense>
-            </ModelBoundary>
-          ) : isHuman
-            ? <HumanHead def={def} anim={anim} />
-            : <AnimalHead def={def} anim={anim} />}
-        </Canvas>
+        {scene}
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
         <Text style={{ fontSize: 17 * t.fontScale, fontWeight: '800', color: t.colors.text }}>
