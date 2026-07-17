@@ -163,6 +163,12 @@ export interface BadgeDef {
 
 export interface ProgressState {
   results: Record<string, LessonResult>;
+  /**
+   * Kids/beginner split path: how many mini-steps (0-3) of each unit are
+   * done. The unit itself still completes through `results` when the final
+   * challenge (quiz + conversation) is passed.
+   */
+  stepsDone: Record<string, number>;
   xp: number;
   streak: number;
   lastStudyDay: string | null;
@@ -235,6 +241,8 @@ export interface AppSettings {
   ttsEnabled: boolean;
   ttsRate: number;
   groqApiKey: string | null;
+  /** Celebration/error sound effects. */
+  sfxEnabled: boolean;
   /**
    * Photorealistic face for human avatars (web): a GLB with ARKit
    * blendshapes — a Ready Player Me avatar URL or the built-in demo head.

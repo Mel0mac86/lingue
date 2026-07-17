@@ -12,6 +12,7 @@ import {
   XP_RULES, bumpMissions, earnedBadges, missionsForToday, todayKey,
 } from '../services/gamification';
 import { syncProgress } from '../services/firebase';
+import { setSfxEnabled } from '../services/sfx';
 
 const PROFILE_KEY = 'lingue.profile';
 const PROGRESS_KEY = 'lingue.progress';
@@ -31,6 +32,7 @@ export function suggestedLevelFor(age: number): CEFRLevel {
 
 const emptyProgress = (): ProgressState => ({
   results: {},
+  stepsDone: {},
   xp: 0,
   streak: 0,
   lastStudyDay: null,
@@ -57,6 +59,7 @@ const defaultSettings = (): AppSettings => ({
   ttsEnabled: true,
   ttsRate: 0.95,
   groqApiKey: null,
+  sfxEnabled: true,
   realisticFaceUrl: null,
 });
 
@@ -69,6 +72,7 @@ interface AppState {
   updateProfile: (patch: Partial<UserProfile>) => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
   recordLessonResult: (result: LessonResult, newWords: number) => void;
+  recordStepDone: (lessonId: string, step: number) => void;
   recordConversation: (feedback: ConversationFeedback, minutes: number) => void;
   addStudyMinutes: (minutes: number) => void;
   clearWrongExercises: (lessonId: string) => void;
@@ -117,6 +121,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!loaded.current) return;
     AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }, [settings]);
+  // Mirror the sound setting into the fire-and-forget sfx module.
+  useEffect(() => { setSfxEnabled(settings.sfxEnabled); }, [settings.sfxEnabled]);
 
   /** Refresh daily missions and streak when a new day starts. */
   const withDailyRefresh = useCallback((p: ProgressState): ProgressState => {
@@ -246,6 +252,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, [withDailyRefresh, touchStreak, bumpHistory]);
 
+  /** Kids/beginner path: one mini-step (single topic) completed. */
+  const recordStepDone = useCallback((lessonId: string, step: number) => {
+    setProgress((prev) => {
+      let p = withDailyRefresh(prev);
+      p = touchStreak(p);
+      const already = p.stepsDone[lessonId] ?? 0;
+      if (step + 1 <= already) return p;
+      p = {
+        ...p,
+        stepsDone: { ...p.stepsDone, [lessonId]: step + 1 },
+        xp: p.xp + 15,
+      };
+      return bumpHistory(p, { xp: 15 });
+    });
+  }, [withDailyRefresh, touchStreak, bumpHistory]);
+
   const clearWrongExercises = useCallback((lessonId: string) => {
     setProgress((prev) => {
       const result = prev.results[lessonId];
@@ -291,12 +313,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AppState>(() => ({
     ready, profile, progress, settings,
     completeOnboarding, updateProfile, updateSettings,
-    recordLessonResult, recordConversation, addStudyMinutes,
+    recordLessonResult, recordStepDone, recordConversation, addStudyMinutes,
     clearWrongExercises, isLessonUnlocked, resetAll,
   }), [
     ready, profile, progress, settings,
     completeOnboarding, updateProfile, updateSettings,
-    recordLessonResult, recordConversation, addStudyMinutes,
+    recordLessonResult, recordStepDone, recordConversation, addStudyMinutes,
     clearWrongExercises, isLessonUnlocked, resetAll,
   ]);
 

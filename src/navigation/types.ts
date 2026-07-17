@@ -39,7 +39,12 @@ export type FeedbackParams = {
 export type RootStackParamList = {
   Onboarding: undefined;
   Tabs: undefined;
-  Lesson: { language: LanguageCode; level: CEFRLevel; unitIndex: number };
+  /**
+   * `step` (kids/beginner path): one topic at a time —
+   * 0 = vocabulary, 1 = expressions, 2 = grammar, 3 = final challenge
+   * (quiz + avatar conversation). Omitted = full lesson in one go.
+   */
+  Lesson: { language: LanguageCode; level: CEFRLevel; unitIndex: number; step?: number };
   Conversation: ConversationParams;
   Feedback: FeedbackParams;
   ReviewMistakes: { language: LanguageCode; level: CEFRLevel; unitIndex: number };

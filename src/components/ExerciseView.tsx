@@ -4,6 +4,7 @@ import type { Exercise } from '../types';
 import { useTheme } from '../theme';
 import { Body, Button, FeedbackBanner, Muted } from './ui';
 import { speak } from '../services/speech';
+import { playSfx } from '../services/sfx';
 
 export const KIND_LABELS: Record<Exercise['kind'], { label: string; emoji: string }> = {
   listening: { label: 'Ascolta e rispondi', emoji: '🎧' },
@@ -65,6 +66,7 @@ export function ExerciseView({
     const correct = isChoice
       ? String(selected) === exercise.answer
       : normalizeAnswer(isBank ? composed : typed) === normalizeAnswer(exercise.answer);
+    playSfx(correct ? 'correct' : 'wrong');
     setChecked(correct);
   };
 

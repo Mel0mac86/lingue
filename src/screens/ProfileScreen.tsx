@@ -169,6 +169,9 @@ export function ProfileScreen() {
         <Pressable onPress={() => updateSettings({ ttsEnabled: !settings.ttsEnabled })}>
           <Body>{settings.ttsEnabled ? '✅ Voce attiva' : '⬜ Voce disattivata'}</Body>
         </Pressable>
+        <Pressable onPress={() => updateSettings({ sfxEnabled: !settings.sfxEnabled })} style={{ marginTop: 6 }}>
+          <Body>{settings.sfxEnabled ? '✅ Effetti sonori attivi' : '⬜ Effetti sonori disattivati'}</Body>
+        </Pressable>
         <Muted style={{ marginTop: 8, marginBottom: 4 }}>Velocità di lettura</Muted>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
           {([[0.75, '🐢 Lenta'], [0.95, '🚶 Normale'], [1.1, '🏃 Veloce']] as const).map(([rate, label]) => (

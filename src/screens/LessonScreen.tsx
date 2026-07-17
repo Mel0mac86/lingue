@@ -6,8 +6,11 @@ import { useApp } from '../state/AppContext';
 import { Body, Button, Card, Muted, ProgressBar, SectionTitle } from '../components/ui';
 import { ExerciseView } from '../components/ExerciseView';
 import { getLesson } from '../services/lessonFactory';
+import { lessonIdFor } from '../content/curriculum';
 import { languageByCode } from '../content/languages';
 import { speak } from '../services/speech';
+import { playSfx } from '../services/sfx';
+import { Confetti } from '../components/Confetti';
 import type { Exercise, Lesson } from '../types';
 import type { RootScreenProps } from '../navigation/types';
 
@@ -25,11 +28,20 @@ type Phase = 'loading' | 'vocab' | 'expressions' | 'grammar' | 'exercises' | 'su
 
 const MAX_HEARTS = 5;
 
+/** Exercise kinds practised in each mini-step of the kids/beginner path. */
+const STEP_KINDS: Exercise['kind'][][] = [
+  ['listening'],
+  ['writing', 'wordbank'],
+  ['reading', 'comprehension'],
+  ['quiz'],
+];
+const STEP_TITLES = ['📚 Parole', '💬 Frasi', '🧠 Grammatica', '🏁 Sfida finale'];
+
 export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
-  const { language, level, unitIndex } = route.params;
+  const { language, level, unitIndex, step } = route.params;
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const { addStudyMinutes } = useApp();
+  const { addStudyMinutes, recordStepDone } = useApp();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>('loading');
@@ -48,15 +60,21 @@ export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
     let mounted = true;
     getLesson(language, level, unitIndex)
       .then((l) => {
-        if (mounted) {
-          setLesson(l);
+        if (!mounted) return;
+        setLesson(l);
+        if (step === undefined) {
           setQueue(l.exercises);
           setPhase('vocab');
+        } else {
+          // One topic at a time: only this step's exercises and theory.
+          const wanted = l.exercises.filter((e) => STEP_KINDS[step].includes(e.kind));
+          setQueue(wanted.length ? wanted : l.exercises.slice(0, 3));
+          setPhase(step === 0 ? 'vocab' : step === 1 ? 'expressions' : step === 2 ? 'grammar' : 'exercises');
         }
       })
       .catch((e) => { if (mounted) setError(String(e?.message ?? e)); });
     return () => { mounted = false; };
-  }, [language, level, unitIndex]);
+  }, [language, level, unitIndex, step]);
 
   if (error) {
     return (
@@ -83,7 +101,9 @@ export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
     );
   }
 
-  const totalExercises = lesson.exercises.length;
+  const totalExercises = step === undefined
+    ? lesson.exercises.length
+    : Math.max(1, lesson.exercises.filter((e) => STEP_KINDS[step].includes(e.kind)).length || 3);
   const phaseBase: Record<Exclude<Phase, 'loading'>, number> = {
     vocab: 0, expressions: 8, grammar: 16, exercises: 24, summary: 100,
   };
@@ -92,6 +112,10 @@ export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
     : phaseBase[phase];
 
   const next = () => {
+    if (step !== undefined) {
+      setPhase('exercises');
+      return;
+    }
     if (phase === 'vocab') setPhase('expressions');
     else if (phase === 'expressions') setPhase('grammar');
     else if (phase === 'grammar') setPhase('exercises');
@@ -109,6 +133,10 @@ export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
       setSolvedCount(solvedCount + 1);
       if (rest.length === 0) {
         addStudyMinutes(Math.max(1, Math.round((Date.now() - startTime.current) / 60000)));
+        playSfx('fanfare');
+        if (step !== undefined && step < 3) {
+          recordStepDone(lessonIdFor(language, level, unitIndex), step);
+        }
         setPhase('summary');
       } else {
         setQueue(rest);
@@ -159,6 +187,15 @@ export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
           ❤️ {hearts}
         </Text>
       </View>
+      {step !== undefined && phase !== 'summary' && (
+        <Text style={{
+          textAlign: 'center', fontWeight: '900', color: t.colors.textMuted,
+          fontSize: 13 * t.fontScale, letterSpacing: 0.5, marginBottom: 4,
+        }}
+        >
+          {STEP_TITLES[step]} · {lesson.title}
+        </Text>
+      )}
 
       {phase === 'exercises' ? (
         <ExerciseView
@@ -233,7 +270,25 @@ export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
             </View>
           )}
 
-          {phase === 'summary' && (
+          {phase === 'summary' && step !== undefined && step < 3 && (
+            <View>
+              <Text style={{ fontSize: 60, textAlign: 'center', marginBottom: 8 }}>🎉</Text>
+              <SectionTitle style={{ textAlign: 'center' }}>
+                {STEP_TITLES[step]} completato!
+              </SectionTitle>
+              <Body style={{ textAlign: 'center', marginBottom: 16 }}>
+                +15 XP! Un argomento alla volta si arriva lontano. Prossima tappa:
+                {' '}{STEP_TITLES[step + 1]}.
+              </Body>
+              <Button
+                title="Torna al percorso"
+                onPress={() => navigation.goBack()}
+                style={{ marginTop: 8 }}
+              />
+            </View>
+          )}
+
+          {phase === 'summary' && (step === undefined || step === 3) && (
             <View>
               <Text style={{ fontSize: 60, textAlign: 'center', marginBottom: 8 }}>
                 {quizScore >= 70 ? '🎉' : '💪'}
@@ -281,6 +336,7 @@ export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
           )}
         </ScrollView>
       )}
+      {phase === 'summary' && quizScore >= 70 && <Confetti />}
     </View>
   );
 }

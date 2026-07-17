@@ -17,6 +17,15 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 const WAVE = [0, 45, 70, 45, 0, -45, -70, -45];
 
 const NODE = 74;
+const STEP_NODE = 58;
+
+/** One topic per node on the kids/beginner path. */
+const STEP_META = [
+  { emoji: '📚', label: 'Parole' },
+  { emoji: '💬', label: 'Frasi' },
+  { emoji: '🧠', label: 'Grammatica' },
+  { emoji: '🏁', label: 'Sfida' },
+] as const;
 
 /**
  * Duolingo-style learning path: one coloured section banner per unit, then
@@ -128,6 +137,95 @@ export function HomeScreen() {
                 const color = UNIT_COLORS[globalUnitIndex % UNIT_COLORS.length];
                 const offset = WAVE[unit.index % WAVE.length];
                 const hasMistakes = result?.passed && (result?.wrongExerciseIds?.length ?? 0) > 0;
+
+                // Kids and beginners (A1) walk the path one topic at a time:
+                // four mini-nodes per unit instead of one big lesson.
+                if (profile.ageBand === 'kids' || level === 'A1') {
+                  const stepsDone = progress.stepsDone[id] ?? 0;
+                  const currentStep = Math.min(stepsDone, 3);
+                  return (
+                    <View key={id} style={{ alignItems: 'center', marginVertical: 8 }}>
+                      <Text style={{
+                        marginTop: 8,
+                        fontWeight: '900',
+                        fontSize: 15 * t.fontScale,
+                        color: unlocked ? t.colors.text : t.colors.textMuted,
+                      }}
+                      >
+                        {unit.title}
+                      </Text>
+                      {STEP_META.map((meta, s) => {
+                        const done = result?.passed || stepsDone > s;
+                        const locked = !unlocked || (!done && stepsDone < s);
+                        const isHere = isCurrent && s === currentStep && !result?.passed;
+                        const stepOffset = WAVE[(unit.index * 2 + s + 1) % WAVE.length];
+                        return (
+                          <View key={meta.label} style={{ alignItems: 'center', marginVertical: 7 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', transform: [{ translateX: stepOffset }] }}>
+                              <Pressable
+                                disabled={locked}
+                                onPress={() => nav.navigate('Lesson', {
+                                  language: profile.targetLanguage, level, unitIndex: unit.index, step: s,
+                                })}
+                                style={({ pressed }) => ({
+                                  width: STEP_NODE,
+                                  height: STEP_NODE,
+                                  borderRadius: STEP_NODE / 2,
+                                  backgroundColor: locked ? t.colors.locked
+                                    : done ? t.colors.gold : color.main,
+                                  borderBottomWidth: pressed ? 2 : 6,
+                                  borderColor: locked ? (t.dark ? '#22343d' : '#CFCFCF')
+                                    : done ? '#D6A800' : color.edge,
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                })}
+                              >
+                                <Text style={{ fontSize: 24 }}>
+                                  {done ? '⭐' : locked ? '🔒' : meta.emoji}
+                                </Text>
+                              </Pressable>
+                              {isHere && <Text style={{ fontSize: 28, marginLeft: 8 }}>🦉</Text>}
+                            </View>
+                            <Text style={{
+                              transform: [{ translateX: stepOffset }],
+                              marginTop: 3,
+                              fontWeight: '800',
+                              fontSize: 11.5 * t.fontScale,
+                              color: locked ? t.colors.textMuted : t.colors.text,
+                            }}
+                            >
+                              {meta.label}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                      {result?.passed && (
+                        <Muted style={{ fontSize: 11.5 * t.fontScale }}>
+                          Quiz {result.quizScore}%
+                          {result.conversationFeedback ? ` · 🗣 ${result.conversationFeedback.overall}` : ''}
+                        </Muted>
+                      )}
+                      {hasMistakes && (
+                        <Pressable
+                          onPress={() => nav.navigate('ReviewMistakes', {
+                            language: profile.targetLanguage, level, unitIndex: unit.index,
+                          })}
+                          style={{
+                            marginTop: 4,
+                            backgroundColor: t.colors.dangerSoft,
+                            borderRadius: 10,
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                          }}
+                        >
+                          <Text style={{ color: t.colors.danger, fontWeight: '800', fontSize: 12 * t.fontScale }}>
+                            ⚠️ Rifai {result!.wrongExerciseIds.length} errori
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  );
+                }
 
                 return (
                   <View key={id} style={{ alignItems: 'center', marginVertical: 10 }}>

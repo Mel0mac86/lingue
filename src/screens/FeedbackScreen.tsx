@@ -6,6 +6,8 @@ import { Body, Button, Card, Muted, ScoreRing, SectionTitle } from '../component
 import { ChatBubble, CorrectionLegend } from '../components/ChatBubble';
 import { XP_RULES } from '../services/gamification';
 import { lessonIdFor } from '../content/curriculum';
+import { playSfx } from '../services/sfx';
+import { Confetti } from '../components/Confetti';
 import type { RootScreenProps } from '../navigation/types';
 
 const PASS_QUIZ = 70;
@@ -43,12 +45,14 @@ export function FeedbackScreen({ route, navigation }: RootScreenProps<'Feedback'
           : 0,
       }, lesson.newWords);
     }
+    if (passed && feedback.overall >= 60) playSfx('fanfare');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
+    <View style={{ flex: 1, backgroundColor: t.colors.background }}>
     <ScrollView
-      style={{ flex: 1, backgroundColor: t.colors.background }}
+      style={{ flex: 1 }}
       contentContainerStyle={{ padding: t.spacing.lg, paddingBottom: 48 }}
     >
       <Text style={{ fontSize: 52, textAlign: 'center', marginTop: 8 }}>
@@ -137,5 +141,7 @@ export function FeedbackScreen({ route, navigation }: RootScreenProps<'Feedback'
         onPress={() => navigation.popToTop()}
       />
     </ScrollView>
+    {passed && feedback.overall >= 60 && <Confetti />}
+    </View>
   );
 }

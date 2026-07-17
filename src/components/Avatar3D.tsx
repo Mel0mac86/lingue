@@ -514,6 +514,141 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
   );
 }
 
+// ─── Scenario backdrops ──────────────────────────────────────────────────────
+
+export type BackdropKind =
+  | 'travel' | 'work' | 'school' | 'daily' | 'social' | 'culture' | 'plain';
+
+/**
+ * Themed 3D environment behind the avatar, so an airport chat happens under
+ * a blue sky with drifting clouds, a lesson in front of a chalkboard, an
+ * office meeting against a window wall, and so on.
+ */
+function Backdrop({ kind }: { kind: BackdropKind }) {
+  const drift = useRef<THREE.Group>(null);
+  useFrame((state) => {
+    if (drift.current) {
+      drift.current.position.x = Math.sin(state.clock.elapsedTime * 0.12) * 0.5;
+    }
+  });
+
+  const wall = (color: string) => (
+    <mesh position={[0, 0, -3.2]}>
+      <planeGeometry args={[12, 8]} />
+      <meshStandardMaterial color={color} roughness={1} />
+    </mesh>
+  );
+  const cloud = (x: number, y: number, s: number, key: string) => (
+    <group key={key} position={[x, y, -2.6]} scale={s}>
+      {[[-0.3, 0, 0.26], [0, 0.12, 0.34], [0.32, 0, 0.28], [0.05, -0.08, 0.3]].map(([cx, cy, r], i) => (
+        <mesh key={i} position={[cx, cy, 0]}>
+          <sphereGeometry args={[r, 16, 16]} />
+          <meshStandardMaterial color="#FFFFFF" roughness={1} />
+        </mesh>
+      ))}
+    </group>
+  );
+
+  switch (kind) {
+    case 'travel':
+      return (
+        <group>
+          {wall('#8EC9F2')}
+          <mesh position={[1.9, 1.6, -3.1]}>
+            <circleGeometry args={[0.55, 24]} />
+            <meshBasicMaterial color="#FFE9A8" />
+          </mesh>
+          <group ref={drift}>
+            {cloud(-1.6, 1.3, 1.1, 'c1')}
+            {cloud(1.2, 0.6, 0.8, 'c2')}
+            {cloud(-0.4, 2, 0.7, 'c3')}
+          </group>
+        </group>
+      );
+    case 'work':
+      return (
+        <group>
+          {wall('#3D4E63')}
+          {[[-1.5, 0.9], [0, 0.9], [1.5, 0.9]].map(([x, y], i) => (
+            <mesh key={i} position={[x, y, -3.1]}>
+              <planeGeometry args={[1.05, 1.5]} />
+              <meshStandardMaterial color="#9FC4E8" roughness={0.6} />
+            </mesh>
+          ))}
+        </group>
+      );
+    case 'school':
+      return (
+        <group>
+          {wall('#D9C6A5')}
+          <mesh position={[0, 0.7, -3.1]}>
+            <planeGeometry args={[4.4, 2.4]} />
+            <meshStandardMaterial color="#2F6B4F" roughness={0.9} />
+          </mesh>
+          <mesh position={[0, 0.7, -3.12]}>
+            <planeGeometry args={[4.7, 2.7]} />
+            <meshStandardMaterial color="#8A5A2B" roughness={0.9} />
+          </mesh>
+          {[[-1.4, 1.35, 1.3], [-0.2, 1.05, 0.9], [-1.1, 0.75, 1.6], [0.6, 0.35, 1.1]].map(([x, y, w], i) => (
+            <mesh key={i} position={[x, y, -3.05]}>
+              <planeGeometry args={[w, 0.06]} />
+              <meshBasicMaterial color="#F3F1E7" />
+            </mesh>
+          ))}
+        </group>
+      );
+    case 'daily':
+      return (
+        <group>
+          {wall('#EAD9C2')}
+          <mesh position={[-1.6, 0.9, -3.12]}>
+            <planeGeometry args={[1.3, 1]} />
+            <meshStandardMaterial color="#8A5A2B" roughness={0.9} />
+          </mesh>
+          <mesh position={[-1.6, 0.9, -3.08]}>
+            <planeGeometry args={[1.1, 0.8]} />
+            <meshStandardMaterial color="#A8D8B9" roughness={0.8} />
+          </mesh>
+          <mesh position={[1.7, 0.4, -3.05]}>
+            <planeGeometry args={[0.9, 2.2]} />
+            <meshStandardMaterial color="#C9A56A" roughness={0.9} />
+          </mesh>
+        </group>
+      );
+    case 'social':
+      return (
+        <group>
+          {wall('#3B2E5A')}
+          <group ref={drift}>
+            {['#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF', '#CE82FF', '#FF9600'].map((c, i) => (
+              <mesh key={c} position={[-2 + i * 0.8, 0.4 + Math.sin(i * 2.1) * 1.1, -2.7]}>
+                <sphereGeometry args={[0.22, 16, 16]} />
+                <meshStandardMaterial color={c} roughness={0.4} />
+              </mesh>
+            ))}
+          </group>
+        </group>
+      );
+    case 'culture':
+      return (
+        <group>
+          {wall('#141C33')}
+          {Array.from({ length: 18 }, (_, i) => (
+            <mesh
+              key={i}
+              position={[((i * 37) % 100) / 12 - 4, ((i * 53) % 80) / 12 - 1.4, -3.1]}
+            >
+              <sphereGeometry args={[0.035 + (i % 3) * 0.015, 8, 8]} />
+              <meshBasicMaterial color="#FFF7CF" />
+            </mesh>
+          ))}
+        </group>
+      );
+    default:
+      return wall('#DCE8F5');
+  }
+}
+
 /** Falls back to the procedural head if the GLB fails to load. */
 class ModelBoundary extends React.Component<
   { fallback: React.ReactNode; children: React.ReactNode },
@@ -541,7 +676,7 @@ class ModelBoundary extends React.Component<
  *    call-style name tag sits in the corner, for a "real person" feeling.
  */
 export function Avatar3D({
-  def, speaking, mood = 'neutral', size = 220, modelUrl, variant = 'bubble', height,
+  def, speaking, mood = 'neutral', size = 220, modelUrl, variant = 'bubble', height, backdrop,
 }: {
   def: AvatarDef;
   speaking: boolean;
@@ -552,6 +687,8 @@ export function Avatar3D({
   variant?: 'bubble' | 'stage';
   /** Stage height (stage variant only). */
   height?: number;
+  /** Themed 3D environment behind the avatar (stage variant only). */
+  backdrop?: BackdropKind;
 }) {
   const t = useTheme();
   const anim = useRef<AnimState>({ speaking, mood });
@@ -577,6 +714,7 @@ export function Avatar3D({
       <directionalLight position={[2.2, 2.8, 3.6]} intensity={1.25} />
       <directionalLight position={[-2.6, 0.6, 2.2]} intensity={0.35} />
       <directionalLight position={[0, 1.5, -3]} intensity={0.5} color={def.color} />
+      {isStage && <Backdrop kind={backdrop ?? 'plain'} />}
       {useRealistic ? (
         <ModelBoundary fallback={<HumanHead def={def} anim={anim} />}>
           <Suspense fallback={<HumanHead def={def} anim={anim} />}>

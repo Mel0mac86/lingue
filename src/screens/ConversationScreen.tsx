@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme';
 import { useApp } from '../state/AppContext';
-import { Avatar3D, type AvatarMood } from '../components/Avatar3D';
+import { Avatar3D, type AvatarMood, type BackdropKind } from '../components/Avatar3D';
 import { ChatBubble } from '../components/ChatBubble';
 import { Button, Muted } from '../components/ui';
 import { avatarById, avatarForRole } from '../content/avatars';
@@ -60,6 +60,14 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
   }, [params, profile?.ageBand, profile?.favoriteAvatarId]);
 
   const mood: AvatarMood = thinking ? 'thinking' : speaking ? 'happy' : 'encouraging';
+
+  // Themed environment: the scenario's world, a chalkboard for lessons
+  // (colourful bubbles for kids), a neutral wall for free chat.
+  const backdrop: BackdropKind = useMemo(() => {
+    if (params.mode === 'lesson') return profile?.ageBand === 'kids' ? 'social' : 'school';
+    if (params.scenarioId) return scenarioById(params.scenarioId).category as BackdropKind;
+    return 'plain';
+  }, [params, profile?.ageBand]);
   const ttsRate = profile?.ageBand === 'seniors' || profile?.ageBand === 'kids'
     ? Math.min(settings.ttsRate, 0.82) : settings.ttsRate;
 
@@ -220,6 +228,7 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
         variant="stage"
         height={Math.min(Math.round(windowHeight * 0.44), 460)}
         modelUrl={settings.realisticFaceUrl ?? undefined}
+        backdrop={backdrop}
       />
 
       {/* Transcript */}
