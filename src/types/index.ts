@@ -235,4 +235,10 @@ export interface AppSettings {
   ttsEnabled: boolean;
   ttsRate: number;
   groqApiKey: string | null;
+  /**
+   * Photorealistic face for human avatars (web): a GLB with ARKit
+   * blendshapes — a Ready Player Me avatar URL or the built-in demo head.
+   * null = stylised procedural heads.
+   */
+  realisticFaceUrl: string | null;
 }

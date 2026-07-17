@@ -12,12 +12,16 @@ import type { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
+/** Self-hosted realistic demo head with ARKit blendshapes (Face Cap, CC-BY). */
+const DEMO_FACE_URL = '/lingue/models/demo-face.glb';
+
 export function ProfileScreen() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
   const { profile, settings, updateSettings, updateProfile, resetAll } = useApp();
   const [keyInput, setKeyInput] = useState('');
   const [keySet, setKeySet] = useState(false);
+  const [faceUrlInput, setFaceUrlInput] = useState('');
 
   useEffect(() => {
     getGroqApiKey().then((k) => setKeySet(!!k));
@@ -86,6 +90,62 @@ export function ProfileScreen() {
             />
           ))}
         </View>
+      </Card>
+
+      {/* Photorealistic face (web) */}
+      <Card style={{ marginBottom: 12 }}>
+        <Body style={{ fontWeight: '800', marginBottom: 4 }}>🎭 Volto realistico (beta)</Body>
+        <Muted style={{ marginBottom: 10 }}>
+          Sostituisce il viso 3D stilizzato degli avatar umani con un volto
+          fotorealistico animato (lip-sync e battito di ciglia compresi).
+          Puoi usare il volto demo oppure creare GRATIS il tuo avatar su
+          readyplayer.me e incollare qui il link .glb.
+        </Muted>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
+          <Chip
+            label="Stilizzato"
+            emoji="🧑‍🎨"
+            selected={!settings.realisticFaceUrl}
+            onPress={() => updateSettings({ realisticFaceUrl: null })}
+          />
+          <Chip
+            label="Volto demo"
+            emoji="🎭"
+            selected={settings.realisticFaceUrl === DEMO_FACE_URL}
+            onPress={() => updateSettings({ realisticFaceUrl: DEMO_FACE_URL })}
+          />
+        </View>
+        <TextInput
+          value={faceUrlInput}
+          onChangeText={setFaceUrlInput}
+          placeholder="https://models.readyplayer.me/….glb"
+          placeholderTextColor={t.colors.textMuted}
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={{
+            borderWidth: 1.5, borderColor: t.colors.border, borderRadius: 12,
+            padding: 12, color: t.colors.text, backgroundColor: t.colors.surface,
+            fontSize: 14 * t.fontScale, marginBottom: 8,
+          }}
+        />
+        <Button
+          title="Usa il mio avatar Ready Player Me"
+          variant="secondary"
+          onPress={() => {
+            const url = faceUrlInput.trim();
+            if (!url.endsWith('.glb') && !url.includes('.glb?')) {
+              Alert.alert('Link non valido', 'Incolla il link del file .glb del tuo avatar (da readyplayer.me).');
+              return;
+            }
+            updateSettings({ realisticFaceUrl: url });
+            setFaceUrlInput('');
+            Alert.alert('Fatto', 'Volto realistico attivato! Se il modello non si carica, torneremo automaticamente al viso stilizzato.');
+          }}
+        />
+        <Muted style={{ marginTop: 8, fontSize: 11 * t.fontScale }}>
+          Volto demo: “facecap” dagli esempi three.js (© Face Cap, CC-BY). Su
+          app native il viso resta stilizzato.
+        </Muted>
       </Card>
 
       {/* Theme */}

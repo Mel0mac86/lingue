@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Text, View } from 'react-native';
+import React, { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Platform, Text, View } from 'react-native';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { AvatarDef, AvatarSpecies } from '../types';
 import { useTheme } from '../theme';
+import { RealisticHead } from './RealisticHead';
 
 export type AvatarMood = 'neutral' | 'happy' | 'thinking' | 'encouraging';
 
@@ -513,6 +514,20 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
   );
 }
 
+/** Falls back to the procedural head if the GLB fails to load. */
+class ModelBoundary extends React.Component<
+  { fallback: React.ReactNode; children: React.ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() { return { failed: true }; }
+
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
 // ─── Public component ────────────────────────────────────────────────────────
 
 /**
@@ -521,17 +536,21 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
  * and on web (WebGL) — Metro picks the right fiber entry automatically.
  */
 export function Avatar3D({
-  def, speaking, mood = 'neutral', size = 220,
+  def, speaking, mood = 'neutral', size = 220, modelUrl,
 }: {
   def: AvatarDef;
   speaking: boolean;
   mood?: AvatarMood;
   size?: number;
+  /** Optional photorealistic GLB (Ready Player Me / ARKit blendshapes). */
+  modelUrl?: string;
 }) {
   const t = useTheme();
   const anim = useRef<AnimState>({ speaking, mood });
   useEffect(() => { anim.current = { speaking, mood }; }, [speaking, mood]);
   const isHuman = def.species === 'human';
+  // GLB loading relies on web APIs (fetch/Image): native uses the procedural head.
+  const useRealistic = isHuman && !!modelUrl && Platform.OS === 'web';
 
   return (
     <View style={{ alignItems: 'center' }}>
@@ -554,7 +573,13 @@ export function Avatar3D({
           <directionalLight position={[2.2, 2.8, 3.6]} intensity={1.25} />
           <directionalLight position={[-2.6, 0.6, 2.2]} intensity={0.35} />
           <directionalLight position={[0, 1.5, -3]} intensity={0.5} color={def.color} />
-          {isHuman
+          {useRealistic ? (
+            <ModelBoundary fallback={<HumanHead def={def} anim={anim} />}>
+              <Suspense fallback={<HumanHead def={def} anim={anim} />}>
+                <RealisticHead url={modelUrl!} anim={anim} />
+              </Suspense>
+            </ModelBoundary>
+          ) : isHuman
             ? <HumanHead def={def} anim={anim} />
             : <AnimalHead def={def} anim={anim} />}
         </Canvas>

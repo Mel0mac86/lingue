@@ -213,7 +213,13 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
     >
       {/* Avatar stage */}
       <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
-        <Avatar3D def={avatar} speaking={speaking} mood={mood} size={150} />
+        <Avatar3D
+          def={avatar}
+          speaking={speaking}
+          mood={mood}
+          size={150}
+          modelUrl={settings.realisticFaceUrl ?? undefined}
+        />
       </View>
 
       {/* Transcript */}

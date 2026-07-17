@@ -57,6 +57,7 @@ const defaultSettings = (): AppSettings => ({
   ttsEnabled: true,
   ttsRate: 0.95,
   groqApiKey: null,
+  realisticFaceUrl: null,
 });
 
 interface AppState {

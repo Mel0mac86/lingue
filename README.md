@@ -31,6 +31,7 @@ Gli esercizi sbagliati vengono **riproposti a fine argomento** finché non sono 
 
 ### Conversazione con avatar AI
 - **Avatar 3D realistici** (Three.js): volto con palpebre che sbattono davvero, iridi che si muovono, labbra e **mascella articolata per la sincronizzazione labiale**, capigliature e espressioni legate all'umore — su iOS/Android (expo-gl) e web (WebGL)
+- **Volto fotorealistico (beta, web)**: da Profilo → "Volto realistico" puoi attivare un **modello 3D scansionato con 52 blendshape facciali ARKit** (lip-sync, battito di ciglia, sorrisi reali) — usa il volto demo incluso oppure **il tuo avatar Ready Player Me** (crealo gratis su readyplayer.me e incolla il link .glb); se il modello non si carica l'app torna da sola al viso stilizzato
 - **Per i bambini: 8 amici animali 3D** (volpe, orso, gatto, cane, coniglio, panda, leone, pinguino) — il bambino sceglie il suo nell'onboarding e parla con lui dopo ogni lezione
 - **Ponte italiano** 🎙️🇮🇹: se non riesci a esprimerti nella lingua studiata puoi parlare in italiano; l'avatar ti capisce, ti insegna come dirlo e ti invita a ripeterlo (senza penalizzare i punteggi)
 - Parla in modo naturale, fa domande, si adatta al livello, **usa il tuo nome**
@@ -126,11 +127,12 @@ src/
 **Aggiungere una lingua** = una riga in `src/content/languages.ts`: il
 curriculum è indipendente dalla lingua e le lezioni vengono generate dall'AI.
 
-**Avatar 3D**: renderer procedurale Three.js in `components/Avatar3D.tsx`
-(react-three-fiber: stessa scena su nativo e web). Il vecchio avatar
-vettoriale 2D resta in `components/Avatar.tsx` come fallback. Il passo
-successivo naturale è un modello GLB fotorealistico (Ready Player Me) con
-morph target per i visemi: la scena è già isolata dietro questo componente.
+**Avatar 3D**: renderer procedurale in `components/Avatar3D.tsx` +
+`components/RealisticHead.tsx` che carica **GLB fotorealistici con
+blendshape ARKit** (Ready Player Me o il volto demo auto-ospitato in
+`public/models/demo-face.glb`, modello "facecap" © Face Cap via three.js,
+CC-BY) con fallback automatico al viso stilizzato. Decoder KTX2/meshopt
+auto-ospitati in `public/basis/`.
 
 ## 🔌 Integrazione Firebase (opzionale)
 
