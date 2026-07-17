@@ -30,7 +30,9 @@ Ogni lezione segue sempre lo stesso flusso:
 Gli esercizi sbagliati vengono **riproposti a fine argomento** finché non sono risolti.
 
 ### Conversazione con avatar AI
-- **Avatar 3D** (Three.js) su schermo: respiro, sguardo che si muove, battito di ciglia, **sincronizzazione labiale** durante il parlato, espressioni legate all'umore — funziona su iOS/Android (expo-gl) e sul web (WebGL)
+- **Avatar 3D realistici** (Three.js): volto con palpebre che sbattono davvero, iridi che si muovono, labbra e **mascella articolata per la sincronizzazione labiale**, capigliature e espressioni legate all'umore — su iOS/Android (expo-gl) e web (WebGL)
+- **Per i bambini: 8 amici animali 3D** (volpe, orso, gatto, cane, coniglio, panda, leone, pinguino) — il bambino sceglie il suo nell'onboarding e parla con lui dopo ogni lezione
+- **Ponte italiano** 🎙️🇮🇹: se non riesci a esprimerti nella lingua studiata puoi parlare in italiano; l'avatar ti capisce, ti insegna come dirlo e ti invita a ripeterlo (senza penalizzare i punteggi)
 - Parla in modo naturale, fa domande, si adatta al livello, **usa il tuo nome**
 - Voce naturale (TTS) + riconoscimento vocale (registrazione → **Groq Whisper**)
 - Feedback con punteggi di **pronuncia, grammatica, fluidità, vocabolario** e suggerimenti

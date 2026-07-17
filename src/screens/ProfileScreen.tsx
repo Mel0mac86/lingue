@@ -7,6 +7,7 @@ import { useApp } from '../state/AppContext';
 import { Body, Button, Card, Chip, Muted, SectionTitle } from '../components/ui';
 import { getGroqApiKey, setGroqApiKey } from '../services/config';
 import { languageByCode } from '../content/languages';
+import { rosterForAgeBand } from '../content/avatars';
 import type { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -63,6 +64,29 @@ export function ProfileScreen() {
           </Muted>
         </Card>
       </Pressable>
+
+      {/* Companion avatar (kids: their animal buddy) */}
+      <Card style={{ marginBottom: 12 }}>
+        <Body style={{ fontWeight: '800', marginBottom: 4 }}>
+          {profile.ageBand === 'kids' ? '🐾 Il tuo amico animale' : '🧑‍🏫 Il tuo tutor per le lezioni'}
+        </Body>
+        <Muted style={{ marginBottom: 8 }}>
+          {profile.ageBand === 'kids'
+            ? 'Parla con te dopo ogni lezione: cambialo quando vuoi!'
+            : 'L’avatar che ti fa praticare dopo ogni lezione.'}
+        </Muted>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+          {rosterForAgeBand(profile.ageBand).map((a) => (
+            <Chip
+              key={a.id}
+              label={a.name}
+              emoji={a.emoji}
+              selected={(profile.favoriteAvatarId ?? (profile.ageBand === 'kids' ? 'foxy' : 'emma')) === a.id}
+              onPress={() => updateProfile({ favoriteAvatarId: a.id })}
+            />
+          ))}
+        </View>
+      </Card>
 
       {/* Theme */}
       <Card style={{ marginBottom: 12 }}>

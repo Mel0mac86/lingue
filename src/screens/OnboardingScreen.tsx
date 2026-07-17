@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import {
-  KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View,
+  KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme';
 import { Body, Button, Chip, Muted, SectionTitle } from '../components/ui';
 import { LANGUAGES } from '../content/languages';
+import { ANIMAL_AVATARS } from '../content/avatars';
 import { ageBandFor, useApp } from '../state/AppContext';
 import type { AgeBand, CEFRLevel, LanguageCode } from '../types';
 
@@ -46,6 +47,7 @@ export function OnboardingScreen() {
   const [level, setLevel] = useState<CEFRLevel>('A1');
   const [interests, setInterests] = useState<string[]>([]);
   const [goal, setGoal] = useState(10);
+  const [animalId, setAnimalId] = useState<string | null>(null);
 
   const age = parseInt(ageText, 10);
   const validAge = !Number.isNaN(age) && age >= 4 && age <= 110;
@@ -63,6 +65,7 @@ export function OnboardingScreen() {
       dailyGoalMinutes: goal,
       interests,
       premium: false,
+      favoriteAvatarId: band === 'kids' ? (animalId ?? 'foxy') : undefined,
       createdAt: Date.now(),
     });
   };
@@ -87,7 +90,7 @@ export function OnboardingScreen() {
           backgroundColor: t.colors.surface,
         }}
       />
-      <Button title="Continua" onPress={() => setStep(1)} disabled={!name.trim()} style={{ marginTop: 20 }} />
+      <Button title="Continua" onPress={() => setStep(step + 1)} disabled={!name.trim()} style={{ marginTop: 20 }} />
     </View>,
 
     // Step 1: age → band
@@ -120,10 +123,44 @@ export function OnboardingScreen() {
           <Muted style={{ marginTop: 4 }}>{BAND_INFO[band].blurb}</Muted>
         </View>
       )}
-      <Button title="Continua" onPress={() => setStep(2)} disabled={!validAge} style={{ marginTop: 20 }} />
+      <Button title="Continua" onPress={() => setStep(step + 1)} disabled={!validAge} style={{ marginTop: 20 }} />
     </View>,
 
-    // Step 2: language
+    // Extra step (kids only): pick the animal buddy
+    ...(band === 'kids' ? [
+      <View key="animal">
+        <Text style={{ fontSize: 44, marginBottom: 8 }}>🐾</Text>
+        <SectionTitle>Scegli il tuo amico animale!</SectionTitle>
+        <Body style={{ marginBottom: 12 }}>
+          Sarà lui a parlare con te dopo ogni lezione. Potrai cambiarlo quando vuoi!
+        </Body>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+          {ANIMAL_AVATARS.map((a) => (
+            <Pressable
+              key={a.id}
+              onPress={() => setAnimalId(a.id)}
+              style={{
+                width: '48%',
+                backgroundColor: animalId === a.id ? `${a.color}22` : t.colors.surface,
+                borderWidth: 2.5,
+                borderColor: animalId === a.id ? a.color : t.colors.border,
+                borderBottomWidth: 5,
+                borderRadius: 18,
+                alignItems: 'center',
+                paddingVertical: 14,
+                marginBottom: 10,
+              }}
+            >
+              <Text style={{ fontSize: 40 }}>{a.emoji}</Text>
+              <Body style={{ fontWeight: '900' }}>{a.name}</Body>
+            </Pressable>
+          ))}
+        </View>
+        <Button title="Continua" onPress={() => setStep(step + 1)} disabled={!animalId} style={{ marginTop: 10 }} />
+      </View>,
+    ] : []),
+
+    // Language
     <View key="lang">
       <Text style={{ fontSize: 44, marginBottom: 8 }}>🌍</Text>
       <SectionTitle>Che lingua vuoi imparare?</SectionTitle>
@@ -138,7 +175,7 @@ export function OnboardingScreen() {
           />
         ))}
       </View>
-      <Button title="Continua" onPress={() => setStep(3)} disabled={!language} style={{ marginTop: 20 }} />
+      <Button title="Continua" onPress={() => setStep(step + 1)} disabled={!language} style={{ marginTop: 20 }} />
     </View>,
 
     // Step 3: level
@@ -153,7 +190,7 @@ export function OnboardingScreen() {
       <Muted style={{ marginTop: 8 }}>
         Il percorso parte da qui e cresce gradualmente fino al C2, senza salti improvvisi.
       </Muted>
-      <Button title="Continua" onPress={() => setStep(4)} style={{ marginTop: 20 }} />
+      <Button title="Continua" onPress={() => setStep(step + 1)} style={{ marginTop: 20 }} />
     </View>,
 
     // Step 4: interests + daily goal
@@ -182,7 +219,7 @@ export function OnboardingScreen() {
       </View>
       <Button title="Inizia il viaggio! 🚀" onPress={finish} style={{ marginTop: 20 }} />
     </View>,
-  ], [name, ageText, band, validAge, language, level, interests, goal, t, step]);
+  ], [name, ageText, band, validAge, language, level, interests, goal, animalId, t, step]);
 
   return (
     <LinearGradient

@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../theme';
 import { useApp } from '../state/AppContext';
 import { Body, Button, Card, Chip, Muted, SectionTitle } from '../components/ui';
-import { AVATARS, ROLE_LABELS } from '../content/avatars';
+import { rosterForAgeBand, ROLE_LABELS } from '../content/avatars';
 import { LANGUAGES } from '../content/languages';
 import { CATEGORY_LABELS, SCENARIOS } from '../content/scenarios';
 import type { LanguageCode, ScenarioCategory, ScenarioDifficulty } from '../types';
@@ -28,7 +28,8 @@ export function FreeTalkScreen() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
   const { profile, settings, updateSettings } = useApp();
-  const [avatarId, setAvatarId] = useState(AVATARS[0].id);
+  const roster = rosterForAgeBand(profile?.ageBand ?? 'adults');
+  const [avatarId, setAvatarId] = useState(profile?.favoriteAvatarId ?? roster[0].id);
   const [language, setLanguage] = useState<LanguageCode>(profile?.targetLanguage ?? 'en');
   const [difficulty, setDifficulty] = useState<ScenarioDifficulty>('beginner');
   const [category, setCategory] = useState<ScenarioCategory>('travel');
@@ -67,7 +68,7 @@ export function FreeTalkScreen() {
       {/* Avatar */}
       <Body style={{ fontWeight: '800', marginBottom: 8 }}>Avatar</Body>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-        {AVATARS.map((a) => (
+        {roster.map((a) => (
           <Pressable key={a.id} onPress={() => setAvatarId(a.id)}>
             <Card style={{
               marginRight: 10, alignItems: 'center', width: 118,

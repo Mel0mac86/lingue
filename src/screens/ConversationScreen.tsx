@@ -8,7 +8,7 @@ import { useApp } from '../state/AppContext';
 import { Avatar3D, type AvatarMood } from '../components/Avatar3D';
 import { ChatBubble } from '../components/ChatBubble';
 import { Button, Muted } from '../components/ui';
-import { avatarById, avatarForRole, AVATARS } from '../content/avatars';
+import { avatarById, avatarForRole } from '../content/avatars';
 import { languageByCode } from '../content/languages';
 import { scenarioById } from '../content/scenarios';
 import { getLesson } from '../services/lessonFactory';
@@ -44,6 +44,7 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
   const [error, setError] = useState<string | null>(null);
   const [ending, setEnding] = useState(false);
   const spokenTurns = useRef(0);
+  const micLang = useRef<'target' | 'it'>('target');
   const startTime = useRef(Date.now());
   const scrollRef = useRef<ScrollView>(null);
 
@@ -51,9 +52,11 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
   const langDef = languageByCode(language);
   const avatar = useMemo(() => {
     if (params.mode === 'free') return avatarById(params.avatarId);
-    if (profile?.ageBand === 'kids') return AVATARS.find((a) => a.id === 'lia') ?? AVATARS[0];
+    // Kids do the post-lesson talk with their chosen animal buddy.
+    if (profile?.ageBand === 'kids') return avatarById(profile.favoriteAvatarId ?? 'foxy');
+    if (profile?.favoriteAvatarId) return avatarById(profile.favoriteAvatarId);
     return avatarForRole('teacher');
-  }, [params, profile?.ageBand]);
+  }, [params, profile?.ageBand, profile?.favoriteAvatarId]);
 
   const mood: AvatarMood = thinking ? 'thinking' : speaking ? 'happy' : 'encouraging';
   const ttsRate = profile?.ageBand === 'seniors' || profile?.ageBand === 'kids'
@@ -134,11 +137,17 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
     requestReply(history);
   }, [turns, thinking, requestReply]);
 
-  const onMicPress = useCallback(async () => {
+  /**
+   * Voice input. The main mic listens in the target language; the 🇮🇹 mic
+   * listens in Italian — the escape hatch when the learner can't manage the
+   * target language yet (the avatar then teaches how to say it).
+   */
+  const onMicPress = useCallback(async (lang: 'target' | 'it') => {
     if (mic === 'recording') {
       setMic('transcribing');
       try {
-        const text = await stopRecordingAndTranscribe(langDef.speechTag);
+        const tag = micLang.current === 'it' ? 'it-IT' : langDef.speechTag;
+        const text = await stopRecordingAndTranscribe(tag);
         if (text) {
           spokenTurns.current += 1;
           sendUserText(text);
@@ -153,6 +162,7 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
     } else if (mic === 'idle') {
       try {
         stopSpeaking();
+        micLang.current = lang;
         await startRecording();
         setMic('recording');
         setError(null);
@@ -257,23 +267,55 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
             }}
           />
           <Pressable
-            onPress={onMicPress}
-            disabled={thinking || mic === 'transcribing'}
+            onPress={() => onMicPress('target')}
+            disabled={thinking || mic === 'transcribing' || (mic === 'recording' && micLang.current !== 'target')}
             style={{
               width: 58, height: 58, borderRadius: 29,
-              backgroundColor: mic === 'recording' ? t.colors.danger : t.colors.primary,
+              backgroundColor: mic === 'recording' && micLang.current === 'target'
+                ? t.colors.danger : t.colors.primary,
               alignItems: 'center', justifyContent: 'center',
             }}
           >
-            {mic === 'transcribing'
+            {mic === 'transcribing' && micLang.current === 'target'
               ? <ActivityIndicator color={t.colors.onPrimary} />
-              : <Text style={{ fontSize: 26 }}>{mic === 'recording' ? '⏹' : '🎙️'}</Text>}
+              : (
+                <Text style={{ fontSize: mic === 'recording' && micLang.current === 'target' ? 26 : 20, textAlign: 'center' }}>
+                  {mic === 'recording' && micLang.current === 'target' ? '⏹' : `🎙️${langDef.flag}`}
+                </Text>
+              )}
           </Pressable>
+          {language !== 'it' && (
+            <Pressable
+              onPress={() => onMicPress('it')}
+              disabled={thinking || mic === 'transcribing' || (mic === 'recording' && micLang.current !== 'it')}
+              style={{
+                width: 58, height: 58, borderRadius: 29, marginLeft: 8,
+                backgroundColor: mic === 'recording' && micLang.current === 'it'
+                  ? t.colors.danger : t.colors.surfaceAlt,
+                borderWidth: 2, borderColor: t.colors.border,
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {mic === 'transcribing' && micLang.current === 'it'
+                ? <ActivityIndicator color={t.colors.text} />
+                : (
+                  <Text style={{ fontSize: mic === 'recording' && micLang.current === 'it' ? 26 : 20, textAlign: 'center' }}>
+                    {mic === 'recording' && micLang.current === 'it' ? '⏹' : '🎙️🇮🇹'}
+                  </Text>
+                )}
+            </Pressable>
+          )}
         </View>
-        {mic === 'recording' && (
+        {mic === 'recording' ? (
           <Muted style={{ textAlign: 'center', marginBottom: 8, color: t.colors.danger }}>
-            ● Sto ascoltando… tocca ⏹ quando hai finito di parlare.
+            ● Ti ascolto in {micLang.current === 'it' ? 'italiano' : langDef.name}… tocca ⏹ quando hai finito.
           </Muted>
+        ) : (
+          language !== 'it' && turns.length <= 1 && (
+            <Muted style={{ textAlign: 'center', marginBottom: 8 }}>
+              Non riesci in {langDef.name}? Tocca 🎙️🇮🇹 e parla in italiano: {avatar.name} ti insegnerà come dirlo.
+            </Muted>
+          )
         )}
         <View style={{ flexDirection: 'row' }}>
           {typed.trim().length > 0 && (

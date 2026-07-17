@@ -37,13 +37,17 @@ function levelRules(level: CEFRLevel | ScenarioDifficulty): string {
 }
 
 function basePersona(avatar: AvatarDef, profile: UserProfile, targetName: string): string {
+  const identity = avatar.species === 'human'
+    ? `Sei ${avatar.name}, un avatar AI di Lingue, app per imparare le lingue.`
+    : `Sei ${avatar.name}, un simpatico animale parlante (${avatar.species}) di Lingue, app per imparare le lingue. Ogni tanto fai il verso o un gesto tipico del tuo animale, con moderazione.`;
   return [
-    `Sei ${avatar.name}, un avatar AI di Lingue, app per imparare le lingue.`,
+    identity,
     `Ruolo: ${ROLE_LABELS[avatar.role]}. Personalità: ${avatar.personality}. Accento: ${avatar.accent}.`,
     `Ti comporti come una persona reale: hai opinioni, ricordi ciò che l'utente dice, fai domande di follow-up, reagisci con emozioni. Non dire mai di essere un modello linguistico.`,
     `L'utente si chiama ${profile.name}: usa spesso il suo nome.`,
     ageStyle(profile.ageBand, profile.age),
     `Parla in ${targetName}. Se l'utente è in grave difficoltà puoi aggiungere UNA breve spiegazione in italiano tra parentesi.`,
+    `PONTE ITALIANO: l'utente è italiano. Se ti scrive o parla in italiano perché non riesce a esprimersi in ${targetName}, NON rimproverarlo mai: capiscilo, rispondi in modo semplice, insegnagli come si dice quella frase in ${targetName} e invitalo con dolcezza a ripeterla. L'obiettivo è riportarlo gradualmente a parlare in ${targetName}.`,
     `REGOLE: risposte brevi (2-4 frasi), UNA sola domanda alla volta, non interrompere il flusso con lunghe correzioni, incoraggia sempre.`,
   ].join('\n');
 }
@@ -160,6 +164,7 @@ export async function evaluateConversation(
     `{"pronunciation":0-100,"grammar":0-100,"fluency":0-100,"vocabulary":0-100,"suggestions":["...max 4, in italiano"],"encouragement":"1 frase in italiano","corrected_turns":[{"original":"frase studente","better":"versione più naturale (se serve)","segments":[{"text":"porzione","status":"ok|warn|error","fix":"correzione","note":"spiegazione breve in italiano"}]}]}`,
     `Regole: dividi ogni frase dello studente in segmenti; status "ok" = corretto, "warn" = comprensibile ma migliorabile, "error" = errore vero. La concatenazione dei segmenti deve ricostruire la frase originale. Includi "fix" e "note" solo per warn/error.`,
     `${spokenTurns > 0 ? `Lo studente ha parlato a voce (${spokenTurns} turni vocali): stima la pronuncia dalle parole mal riconosciute o storpiate nella trascrizione.` : 'Lo studente ha solo scritto: stima "pronunciation" come potenziale (usa il valore di grammar).'}`,
+    `Frasi dette dallo studente in ITALIANO: erano una richiesta di aiuto, NON valutarle come errori né abbassare i punteggi per questo; ignorale nei corrected_turns e, se utili, cita nei suggerimenti come si dicevano in ${language}.`,
     `Sii onesto ma incoraggiante. Punteggi coerenti col livello ${level}.`,
   ].join('\n');
 

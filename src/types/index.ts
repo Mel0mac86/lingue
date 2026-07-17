@@ -19,6 +19,8 @@ export interface UserProfile {
   dailyGoalMinutes: number;
   interests: string[];
   premium: boolean;
+  /** Preferred companion avatar (kids pick their animal friend here). */
+  favoriteAvatarId?: string;
   createdAt: number;
 }
 
@@ -188,12 +190,17 @@ export type AvatarRole =
   | 'teacher' | 'friend' | 'colleague' | 'receptionist'
   | 'customer' | 'employer' | 'tour_guide' | 'doctor';
 
+/** 'human' renders the realistic head; any other value renders that animal. */
+export type AvatarSpecies =
+  | 'human' | 'fox' | 'bear' | 'cat' | 'dog' | 'rabbit' | 'panda' | 'lion' | 'penguin';
+
 export interface AvatarDef {
   id: string;
   name: string;
   gender: 'female' | 'male';
   ageLook: number;
   role: AvatarRole;
+  species: AvatarSpecies;
   personality: string;
   accent: string;
   color: string;
