@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect, useMemo, useRef } from 'react';
-import { Platform, Text, View } from 'react-native';
+import { Image, Platform, Text, View } from 'react-native';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { AvatarDef, AvatarSpecies } from '../types';
@@ -605,6 +605,21 @@ export type BackdropKind =
   | 'travel' | 'work' | 'school' | 'daily' | 'social' | 'culture' | 'plain';
 
 /**
+ * Illustrated scenario backdrops (generated with Canva AI, bundled with the
+ * app). When one exists for the current kind it is rendered as a full-bleed
+ * image behind the transparent 3D canvas; the procedural 3D set below stays
+ * as the fallback for 'plain' or if an image is ever missing.
+ */
+const BACKDROP_IMAGES: Partial<Record<BackdropKind, number>> = {
+  travel: require('../../assets/backdrops/travel.jpg'),
+  work: require('../../assets/backdrops/work.jpg'),
+  school: require('../../assets/backdrops/school.jpg'),
+  daily: require('../../assets/backdrops/daily.jpg'),
+  social: require('../../assets/backdrops/social.jpg'),
+  culture: require('../../assets/backdrops/culture.jpg'),
+};
+
+/**
  * Themed 3D environment behind the avatar, so an airport chat happens under
  * a blue sky with drifting clouds, a lesson in front of a chalkboard, an
  * office meeting against a window wall, and so on.
@@ -782,6 +797,7 @@ export function Avatar3D({
   // GLB loading relies on web APIs (fetch/Image): native uses the procedural head.
   const useRealistic = isHuman && !!modelUrl && Platform.OS === 'web';
   const isStage = variant === 'stage';
+  const backdropImage = isStage ? BACKDROP_IMAGES[backdrop ?? 'plain'] : undefined;
 
   const scene = (
     <Canvas
@@ -799,7 +815,7 @@ export function Avatar3D({
       <directionalLight position={[2.2, 2.8, 3.6]} intensity={1.25} />
       <directionalLight position={[-2.6, 0.6, 2.2]} intensity={0.35} />
       <directionalLight position={[0, 1.5, -3]} intensity={0.5} color={def.color} />
-      {isStage && <Backdrop kind={backdrop ?? 'plain'} />}
+      {isStage && !backdropImage && <Backdrop kind={backdrop ?? 'plain'} />}
       {useRealistic ? (
         <ModelBoundary fallback={<HumanHead def={def} anim={anim} />}>
           <Suspense fallback={<HumanHead def={def} anim={anim} />}>
@@ -821,6 +837,13 @@ export function Avatar3D({
         overflow: 'hidden',
       }}
       >
+        {backdropImage != null && (
+          <Image
+            source={backdropImage}
+            resizeMode="cover"
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+          />
+        )}
         {scene}
         {/* video-call style name tag */}
         <View style={{
