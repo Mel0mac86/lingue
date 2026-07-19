@@ -5,7 +5,7 @@ import { useTheme } from '../theme';
 import { useApp } from '../state/AppContext';
 import { Body, Button, Card, Muted, ProgressBar, SectionTitle } from '../components/ui';
 import { ExerciseView } from '../components/ExerciseView';
-import { getLesson } from '../services/lessonFactory';
+import { getLesson, prefetchNextLesson } from '../services/lessonFactory';
 import { lessonIdFor } from '../content/curriculum';
 import { languageByCode } from '../content/languages';
 import { speak } from '../services/speech';
@@ -24,7 +24,7 @@ import type { RootScreenProps } from '../navigation/types';
  * queue and must be solved before the lesson can finish; mistakes also cost
  * a heart and are recorded for the end-of-topic review.
  */
-type Phase = 'loading' | 'vocab' | 'expressions' | 'grammar' | 'exercises' | 'summary';
+type Phase = 'loading' | 'vocab' | 'expressions' | 'grammar' | 'exercises' | 'refill' | 'summary';
 
 const MAX_HEARTS = 5;
 
@@ -48,6 +48,8 @@ export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
   const [queue, setQueue] = useState<Exercise[]>([]);
   const [solvedCount, setSolvedCount] = useState(0);
   const [hearts, setHearts] = useState(MAX_HEARTS);
+  const [refillQueue, setRefillQueue] = useState<Exercise[]>([]);
+  const refillRound = useRef(0);
   const wrongIds = useRef<Set<string>>(new Set());
   const attempted = useRef<Set<string>>(new Set());
   const quizTotal = useRef(0);
@@ -55,6 +57,14 @@ export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
   const startTime = useRef(Date.now());
 
   const speechTag = languageByCode(language).speechTag;
+
+  // Warm up the next unit while the user reads the summary / talks to the
+  // avatar, so it opens instantly instead of waiting for AI generation.
+  useEffect(() => {
+    if (phase === 'summary' && (step === undefined || step === 3)) {
+      prefetchNextLesson(language, level, unitIndex);
+    }
+  }, [phase, step, language, level, unitIndex]);
 
   useEffect(() => {
     let mounted = true;
@@ -105,7 +115,7 @@ export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
     ? lesson.exercises.length
     : Math.max(1, lesson.exercises.filter((e) => STEP_KINDS[step].includes(e.kind)).length || 3);
   const phaseBase: Record<Exclude<Phase, 'loading'>, number> = {
-    vocab: 0, expressions: 8, grammar: 16, exercises: 24, summary: 100,
+    vocab: 0, expressions: 8, grammar: 16, exercises: 24, refill: 24, summary: 100,
   };
   const progressPct = phase === 'exercises'
     ? 24 + (solvedCount / totalExercises) * 76
@@ -143,10 +153,43 @@ export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
       }
     } else {
       wrongIds.current.add(current.id);
-      setHearts((h) => Math.max(0, h - 1));
+      const newHearts = Math.max(0, hearts - 1);
+      setHearts(newHearts);
       // Duolingo mechanic: the missed exercise returns at the end of the queue.
       setQueue([...rest, current]);
+      if (newHearts === 0 && lesson) {
+        // Out of hearts: a quick practice round earns one back.
+        refillRound.current += 1;
+        const practice: Exercise[] = [];
+        if (lesson.vocabulary.length >= 3) {
+          practice.push({
+            id: `${lesson.id}-refill${refillRound.current}-pairs`,
+            kind: 'pairs',
+            prompt: 'Riscalda la memoria: abbina le parole della lezione.',
+            pairs: lesson.vocabulary.slice(0, 5)
+              .map((v) => ({ left: v.term, right: v.translation })),
+            answer: '',
+          });
+        }
+        practice.push(...lesson.exercises.filter(
+          (e) => attempted.current.has(e.id) && !wrongIds.current.has(e.id)
+            && e.kind !== 'speaking',
+        ).slice(0, 2));
+        setRefillQueue(practice.length > 0 ? practice : lesson.exercises.slice(0, 1));
+        setPhase('refill');
+      }
     }
+  };
+
+  const onRefillDone = (correct: boolean) => {
+    const [current, ...rest] = refillQueue;
+    const next = correct ? rest : [...rest, current];
+    if (next.length === 0) {
+      setHearts(1);
+      playSfx('correct');
+      setPhase('exercises');
+    }
+    setRefillQueue(next);
   };
 
   const quizScore = quizTotal.current > 0
@@ -204,6 +247,26 @@ export function LessonScreen({ route, navigation }: RootScreenProps<'Lesson'>) {
           speechTag={speechTag}
           onDone={onExerciseDone}
         />
+      ) : phase === 'refill' ? (
+        <View style={{ flex: 1 }}>
+          <View style={{
+            marginHorizontal: t.spacing.lg, marginBottom: 4,
+            backgroundColor: t.colors.dangerSoft, borderRadius: 14, padding: 12,
+          }}
+          >
+            <Body style={{ fontWeight: '800', color: t.colors.danger }}>
+              💔 Cuori finiti! Completa questo mini-ripasso per recuperarne uno e continuare.
+            </Body>
+          </View>
+          {refillQueue.length > 0 && (
+            <ExerciseView
+              key={`${refillQueue[0].id}-${refillQueue.length}`}
+              exercise={refillQueue[0]}
+              speechTag={speechTag}
+              onDone={onRefillDone}
+            />
+          )}
+        </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: t.spacing.lg, paddingBottom: 48 }}>
           {phase === 'vocab' && (

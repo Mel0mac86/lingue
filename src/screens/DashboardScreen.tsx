@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  Pressable, ScrollView, Text, TextInput, useWindowDimensions, View,
+} from 'react-native';
 import { useTheme } from '../theme';
 import { useApp } from '../state/AppContext';
 import {
@@ -8,6 +10,10 @@ import {
 import { LineChart } from '../components/LineChart';
 import { BADGES, levelForXp } from '../services/gamification';
 import { buildStudyPlan, type StudyPlan } from '../services/studyPlan';
+import { learnedVocabulary } from '../services/review';
+import { languageByCode } from '../content/languages';
+import { speak } from '../services/speech';
+import type { VocabItem } from '../types';
 
 /** Progress dashboard: stats, CEFR level, charts, badges and the AI plan. */
 export function DashboardScreen() {
@@ -17,6 +23,20 @@ export function DashboardScreen() {
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [planError, setPlanError] = useState<string | null>(null);
+  const [words, setWords] = useState<{ item: VocabItem; lessonTitle: string }[]>([]);
+  const [wordSearch, setWordSearch] = useState('');
+  const [wordsExpanded, setWordsExpanded] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!profile) return undefined;
+    learnedVocabulary(profile, progress)
+      .then((w) => { if (mounted) setWords(w); })
+      .catch(() => {});
+    return () => { mounted = false; };
+    // Reload when another lesson gets completed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progress.lessonsCompleted]);
 
   if (!profile) return null;
   const lvl = levelForXp(progress.xp);
@@ -69,6 +89,74 @@ export function DashboardScreen() {
         <StatTile emoji="💬" value={`${progress.conversationsHeld}`} label="Conversazioni" />
         <StatTile emoji="🏅" value={profile.level} label="Livello CEFR" />
       </View>
+
+      {/* Personal dictionary */}
+      {words.length > 0 && (() => {
+        const speechTag = languageByCode(profile.targetLanguage).speechTag;
+        const q = wordSearch.trim().toLowerCase();
+        const filtered = q
+          ? words.filter(({ item }) => item.term.toLowerCase().includes(q)
+            || item.translation.toLowerCase().includes(q))
+          : words;
+        const shown = wordsExpanded || q ? filtered : filtered.slice(0, 8);
+        return (
+          <Card style={{ marginBottom: 12 }}>
+            <Body style={{ fontWeight: '800', marginBottom: 4 }}>
+              📖 Le mie parole ({words.length})
+            </Body>
+            <Muted style={{ marginBottom: 10 }}>
+              Tutte le parole delle lezioni completate. Tocca 🔊 per riascoltarle.
+            </Muted>
+            <TextInput
+              value={wordSearch}
+              onChangeText={setWordSearch}
+              placeholder="Cerca una parola…"
+              placeholderTextColor={t.colors.textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={{
+                borderWidth: 1.5, borderColor: t.colors.border, borderRadius: 12,
+                paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10,
+                color: t.colors.text, backgroundColor: t.colors.surface,
+                fontSize: 14.5 * t.fontScale,
+              }}
+            />
+            {shown.map(({ item }, i) => (
+              <View
+                key={`${item.term}-${i}`}
+                style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  paddingVertical: 7,
+                  borderTopWidth: i === 0 ? 0 : 1, borderColor: t.colors.border,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Body style={{ fontWeight: '800' }}>{item.term}</Body>
+                  <Muted>{item.translation}</Muted>
+                </View>
+                <Pressable
+                  onPress={() => speak(item.term, { languageTag: speechTag, rate: 0.8 })}
+                  hitSlop={8}
+                >
+                  <Text style={{ fontSize: 20 }}>🔊</Text>
+                </Pressable>
+              </View>
+            ))}
+            {filtered.length === 0 && (
+              <Muted style={{ textAlign: 'center', marginVertical: 8 }}>
+                Nessuna parola trovata per “{wordSearch}”.
+              </Muted>
+            )}
+            {!q && filtered.length > 8 && (
+              <Pressable onPress={() => setWordsExpanded(!wordsExpanded)} style={{ marginTop: 8 }}>
+                <Text style={{ color: t.colors.blue, fontWeight: '800', textAlign: 'center', fontSize: 13.5 * t.fontScale }}>
+                  {wordsExpanded ? 'Mostra meno' : `Mostra tutte (${filtered.length})`}
+                </Text>
+              </Pressable>
+            )}
+          </Card>
+        );
+      })()}
 
       {/* Averages */}
       <Card style={{ marginBottom: 12 }}>

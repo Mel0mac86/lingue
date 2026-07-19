@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { CEFRLevel, CurriculumUnit, Lesson, LanguageCode } from '../types';
+import { CEFR_ORDER } from '../types';
 import { languageByCode } from '../content/languages';
 import { lessonIdFor, unitsForLevel } from '../content/curriculum';
 import { seedLessonById } from '../content/seedLessons';
@@ -42,6 +43,27 @@ export async function getLesson(
   const lesson = await generateLesson(language, unit);
   await AsyncStorage.setItem(CACHE_PREFIX + id, JSON.stringify(lesson));
   return augmentLesson(lesson);
+}
+
+/**
+ * Fire-and-forget warm-up of the NEXT lesson while the user is still on the
+ * summary/conversation of the current one, so the next unit opens instantly
+ * instead of waiting for AI generation. Rolls over to the next CEFR level at
+ * the end of a section. Failures (no API key, offline) are silently ignored:
+ * the lesson will simply be generated on demand as before.
+ */
+export function prefetchNextLesson(
+  language: LanguageCode, level: CEFRLevel, unitIndex: number,
+): void {
+  let nextLevel = level;
+  let nextUnit = unitIndex + 1;
+  if (nextUnit >= unitsForLevel(level).length) {
+    const li = CEFR_ORDER.indexOf(level);
+    if (li + 1 >= CEFR_ORDER.length) return;
+    nextLevel = CEFR_ORDER[li + 1];
+    nextUnit = 0;
+  }
+  getLesson(language, nextLevel, nextUnit).catch(() => {});
 }
 
 /**

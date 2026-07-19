@@ -124,6 +124,33 @@ export async function nextAvatarReply(
   return chat(messages, { temperature: 0.8, maxTokens: 320 });
 }
 
+/**
+ * "💡 Aiutami": suggests ONE short reply the learner could give right now,
+ * with its Italian translation — the escape hatch for when they freeze.
+ */
+export async function suggestUserReply(
+  turns: ConversationTurn[], language: string, level: string,
+): Promise<{ reply: string; translation: string }> {
+  const transcript = turns.slice(-8)
+    .map((t) => `${t.role === 'user' ? 'STUDENTE' : 'AVATAR'}: ${t.text}`)
+    .join('\n');
+  const raw = await chatJson<{ reply: string; translation: string }>([
+    {
+      role: 'system',
+      content: [
+        `Lo studente italiano (livello ${level}) è bloccato in una conversazione in ${language} e non sa cosa rispondere.`,
+        `Suggerisci UNA sola risposta breve (max 15 parole), naturale e adatta al livello, che LO STUDENTE potrebbe dire ADESSO all'avatar, coerente con l'ultima battuta dell'avatar.`,
+        `Rispondi SOLO in JSON: {"reply":"frase in ${language}","translation":"traduzione italiana"}`,
+      ].join('\n'),
+    },
+    { role: 'user', content: transcript || '(La conversazione sta per iniziare.)' },
+  ], 200);
+  return {
+    reply: String(raw.reply ?? '').trim(),
+    translation: String(raw.translation ?? '').trim(),
+  };
+}
+
 // ─── End-of-conversation evaluation ──────────────────────────────────────────
 
 interface RawFeedback {

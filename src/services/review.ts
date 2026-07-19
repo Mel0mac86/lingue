@@ -15,9 +15,10 @@ import { getLesson } from './lessonFactory';
  * Only passed lessons are loaded, so everything comes from the seed content
  * or the local cache: no AI call, works offline.
  */
-export async function buildReviewSession(
+/** All lessons the user has passed, loaded from seed content / local cache. */
+async function loadPassedLessons(
   profile: UserProfile, progress: ProgressState,
-): Promise<Exercise[]> {
+): Promise<Lesson[]> {
   const lessons: Lesson[] = [];
   for (const level of CEFR_ORDER) {
     for (const unit of unitsForLevel(level)) {
@@ -31,6 +32,31 @@ export async function buildReviewSession(
       }
     }
   }
+  return lessons;
+}
+
+/** Personal dictionary: every word studied in completed lessons. */
+export async function learnedVocabulary(
+  profile: UserProfile, progress: ProgressState,
+): Promise<{ item: VocabItem; lessonTitle: string }[]> {
+  const lessons = await loadPassedLessons(profile, progress);
+  const seen = new Set<string>();
+  const out: { item: VocabItem; lessonTitle: string }[] = [];
+  for (const l of lessons) {
+    for (const v of l.vocabulary) {
+      const key = v.term.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ item: v, lessonTitle: l.title });
+    }
+  }
+  return out;
+}
+
+export async function buildReviewSession(
+  profile: UserProfile, progress: ProgressState,
+): Promise<Exercise[]> {
+  const lessons = await loadPassedLessons(profile, progress);
   if (lessons.length === 0) return [];
 
   const day = new Date().toISOString().slice(0, 10);

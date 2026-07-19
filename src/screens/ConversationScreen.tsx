@@ -14,7 +14,7 @@ import { scenarioById } from '../content/scenarios';
 import { getLesson } from '../services/lessonFactory';
 import {
   evaluateConversation, freeConversationPrompt, lessonConversationPrompt,
-  nextAvatarReply,
+  nextAvatarReply, suggestUserReply,
 } from '../services/tutor';
 import {
   cancelRecording, speak, startRecording, stopRecordingAndTranscribe, stopSpeaking,
@@ -44,6 +44,8 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
   const [typed, setTyped] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [ending, setEnding] = useState(false);
+  const [suggestion, setSuggestion] = useState<{ reply: string; translation: string } | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
   const spokenTurns = useRef(0);
   const micLang = useRef<'target' | 'it'>('target');
   const startTime = useRef(Date.now());
@@ -142,11 +144,29 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
     const clean = text.trim();
     if (!clean || thinking) return;
     stopSpeaking();
+    setSuggestion(null);
     const history: ConversationTurn[] = [...turns, { role: 'user', text: clean }];
     setTurns(history);
     setTyped('');
     requestReply(history);
   }, [turns, thinking, requestReply]);
+
+  /** "💡 Aiutami": ask for a suggested reply when the learner is stuck. */
+  const askSuggestion = useCallback(async () => {
+    if (suggesting) return;
+    setSuggesting(true);
+    setError(null);
+    try {
+      const level = params.mode === 'lesson' ? params.level : params.difficulty;
+      setSuggestion(await suggestUserReply(turns, langDef.name, level));
+    } catch (e) {
+      setError(e instanceof MissingApiKeyError
+        ? e.message
+        : `Suggerimento non riuscito: ${String((e as Error)?.message ?? e)}`);
+    } finally {
+      setSuggesting(false);
+    }
+  }, [suggesting, turns, langDef.name, params]);
 
   /**
    * Voice input. The main mic listens in the target language; the 🇮🇹 mic
@@ -262,6 +282,59 @@ export function ConversationScreen({ route, navigation }: RootScreenProps<'Conve
         borderTopWidth: 1, borderTopColor: t.colors.border,
       }}
       >
+        {suggestion ? (
+          <View style={{
+            backgroundColor: `${t.colors.gold}18`, borderWidth: 2, borderColor: t.colors.gold,
+            borderRadius: 14, padding: 12, marginBottom: 10,
+          }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: t.colors.text, fontWeight: '900', fontSize: 15.5 * t.fontScale }}>
+                  {suggestion.reply}
+                </Text>
+                <Muted style={{ marginTop: 2 }}>{suggestion.translation}</Muted>
+              </View>
+              <Pressable
+                onPress={() => speak(suggestion.reply, { languageTag: langDef.speechTag, rate: 0.8 })}
+                hitSlop={8}
+                style={{ marginLeft: 10 }}
+              >
+                <Text style={{ fontSize: 22 }}>🔊</Text>
+              </Pressable>
+              <Pressable onPress={() => setSuggestion(null)} hitSlop={8} style={{ marginLeft: 12 }}>
+                <Text style={{ fontSize: 18, color: t.colors.textMuted, fontWeight: '800' }}>✕</Text>
+              </Pressable>
+            </View>
+            <Muted style={{ marginTop: 6, fontSize: 12 * t.fontScale }}>
+              Leggila, ripetila al microfono 🎙️ oppure toccala per scriverla.
+            </Muted>
+            <Pressable
+              onPress={() => { setTyped(suggestion.reply); setSuggestion(null); }}
+              style={{ marginTop: 6 }}
+            >
+              <Text style={{ color: t.colors.blue, fontWeight: '800', fontSize: 13.5 * t.fontScale }}>
+                ✍️ Usa questa frase
+              </Text>
+            </Pressable>
+          </View>
+        ) : turns.length > 0 && !ending ? (
+          <Pressable
+            onPress={askSuggestion}
+            disabled={suggesting || thinking}
+            style={{
+              alignSelf: 'flex-start', marginBottom: 8,
+              backgroundColor: `${t.colors.gold}22`,
+              borderWidth: 1.5, borderColor: t.colors.gold,
+              borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6,
+              opacity: suggesting || thinking ? 0.6 : 1,
+            }}
+          >
+            <Text style={{ color: t.colors.text, fontWeight: '800', fontSize: 13 * t.fontScale }}>
+              {suggesting ? '💡 Ci penso…' : '💡 Aiutami: cosa posso dire?'}
+            </Text>
+          </Pressable>
+        ) : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
           <TextInput
             value={typed}
