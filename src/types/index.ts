@@ -47,7 +47,8 @@ export interface GrammarPoint {
 }
 
 export type ExerciseKind =
-  | 'listening' | 'reading' | 'writing' | 'wordbank' | 'comprehension' | 'quiz';
+  | 'listening' | 'reading' | 'writing' | 'wordbank' | 'comprehension' | 'quiz'
+  | 'speaking' | 'pairs';
 
 export interface Exercise {
   id: string;
@@ -61,6 +62,8 @@ export interface Exercise {
   choices?: string[];
   /** Word bank for 'wordbank' exercises: correct words + distractors, shuffled. */
   words?: string[];
+  /** Term/translation pairs for 'pairs' matching exercises. */
+  pairs?: { left: string; right: string }[];
   /** Expected answer: index into choices (as string) or free text/sentence. */
   answer: string;
   hint?: string;

@@ -48,6 +48,8 @@ export type RootStackParamList = {
   Conversation: ConversationParams;
   Feedback: FeedbackParams;
   ReviewMistakes: { language: LanguageCode; level: CEFRLevel; unitIndex: number };
+  /** Daily spaced-repetition session built from already-studied material. */
+  Review: undefined;
   Premium: undefined;
 };
 

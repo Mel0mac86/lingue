@@ -75,6 +75,8 @@ interface AppState {
   recordStepDone: (lessonId: string, step: number) => void;
   recordConversation: (feedback: ConversationFeedback, minutes: number) => void;
   addStudyMinutes: (minutes: number) => void;
+  /** Generic XP grant (e.g. completing a Ripasso session). */
+  awardXp: (amount: number) => void;
   clearWrongExercises: (lessonId: string) => void;
   isLessonUnlocked: (level: CEFRLevel, unitIndex: number) => boolean;
   resetAll: () => void;
@@ -268,6 +270,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, [withDailyRefresh, touchStreak, bumpHistory]);
 
+  const awardXp = useCallback((amount: number) => {
+    setProgress((prev) => {
+      let p = withDailyRefresh(prev);
+      p = touchStreak(p);
+      p = { ...p, xp: p.xp + amount };
+      return bumpHistory(p, { xp: amount });
+    });
+  }, [withDailyRefresh, touchStreak, bumpHistory]);
+
   const clearWrongExercises = useCallback((lessonId: string) => {
     setProgress((prev) => {
       const result = prev.results[lessonId];
@@ -314,12 +325,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     ready, profile, progress, settings,
     completeOnboarding, updateProfile, updateSettings,
     recordLessonResult, recordStepDone, recordConversation, addStudyMinutes,
-    clearWrongExercises, isLessonUnlocked, resetAll,
+    awardXp, clearWrongExercises, isLessonUnlocked, resetAll,
   }), [
     ready, profile, progress, settings,
     completeOnboarding, updateProfile, updateSettings,
     recordLessonResult, recordStepDone, recordConversation, addStudyMinutes,
-    clearWrongExercises, isLessonUnlocked, resetAll,
+    awardXp, clearWrongExercises, isLessonUnlocked, resetAll,
   ]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

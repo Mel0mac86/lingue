@@ -33,15 +33,61 @@ export async function getLesson(
   const id = lessonIdFor(language, level, unitIndex);
 
   const seed = seedLessonById(id);
-  if (seed) return seed;
+  if (seed) return augmentLesson(seed);
 
   const cached = await AsyncStorage.getItem(CACHE_PREFIX + id);
-  if (cached) return JSON.parse(cached) as Lesson;
+  if (cached) return augmentLesson(JSON.parse(cached) as Lesson);
 
   const unit = unitsForLevel(level)[unitIndex];
   const lesson = await generateLesson(language, unit);
   await AsyncStorage.setItem(CACHE_PREFIX + id, JSON.stringify(lesson));
-  return lesson;
+  return augmentLesson(lesson);
+}
+
+/**
+ * Locally-built exercises added to every lesson (seed, cached or generated):
+ * a term↔translation matching game from the vocabulary and two "listen and
+ * repeat" pronunciation drills from the expressions. Deterministic, no AI
+ * call, idempotent on already-augmented lessons.
+ */
+function augmentLesson(lesson: Lesson): Lesson {
+  const exercises = [...lesson.exercises];
+
+  if (!exercises.some((e) => e.kind === 'pairs') && lesson.vocabulary.length >= 3) {
+    const pairs = lesson.vocabulary.slice(0, 5)
+      .map((v) => ({ left: v.term, right: v.translation }));
+    // After the listening block, before the reading/writing ones.
+    const at = Math.min(2, exercises.length);
+    exercises.splice(at, 0, {
+      id: `${lesson.id}-pairs`,
+      kind: 'pairs',
+      prompt: 'Tocca una parola e poi la sua traduzione.',
+      pairs,
+      answer: '',
+    });
+  }
+
+  if (!exercises.some((e) => e.kind === 'speaking')) {
+    const phrases = lesson.expressions.map((e) => e.phrase)
+      .concat(lesson.vocabulary.map((v) => v.example))
+      .filter((p) => !!p && p.length <= 80)
+      .slice(0, 2);
+    // Right before the final quiz block, so speaking caps the practice.
+    const quizAt = exercises.findIndex((e) => e.kind === 'quiz');
+    phrases.forEach((phrase, i) => {
+      exercises.splice(quizAt === -1 ? exercises.length : quizAt + i, 0, {
+        id: `${lesson.id}-speak${i}`,
+        kind: 'speaking',
+        prompt: 'Ascolta la frase e ripetila ad alta voce.',
+        audioText: phrase,
+        answer: phrase,
+      });
+    });
+  }
+
+  return exercises.length === lesson.exercises.length
+    ? lesson
+    : { ...lesson, exercises };
 }
 
 async function generateLesson(language: LanguageCode, unit: CurriculumUnit): Promise<Lesson> {

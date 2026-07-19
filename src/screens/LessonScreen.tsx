@@ -30,8 +30,8 @@ const MAX_HEARTS = 5;
 
 /** Exercise kinds practised in each mini-step of the kids/beginner path. */
 const STEP_KINDS: Exercise['kind'][][] = [
-  ['listening'],
-  ['writing', 'wordbank'],
+  ['listening', 'pairs'],
+  ['writing', 'wordbank', 'speaking'],
   ['reading', 'comprehension'],
   ['quiz'],
 ];

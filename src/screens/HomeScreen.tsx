@@ -57,6 +57,34 @@ export function HomeScreen() {
   }
 
   let globalUnitIndex = -1;
+  const anyPassed = Object.values(progress.results).some((r) => r?.passed);
+
+  // Spaced-repetition entry point, repeated along the path every 3 units.
+  const reviewNode = () => (
+    <View style={{ alignItems: 'center', marginVertical: 10 }}>
+      <Pressable
+        onPress={() => nav.navigate('Review')}
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: '#CE82FF',
+          borderBottomWidth: pressed ? 2 : 5,
+          borderColor: '#A568CC',
+          borderRadius: 18,
+          paddingHorizontal: 20,
+          paddingVertical: 11,
+        })}
+      >
+        <Text style={{ fontSize: 22, marginRight: 8 }}>💪</Text>
+        <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 * t.fontScale }}>
+          Ripasso
+        </Text>
+      </Pressable>
+      <Muted style={{ marginTop: 4, fontSize: 11.5 * t.fontScale }}>
+        Errori e parole già studiate
+      </Muted>
+    </View>
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
@@ -130,6 +158,7 @@ export function HomeScreen() {
 
               {units.map((unit) => {
                 globalUnitIndex += 1;
+                const showReviewAfter = anyPassed && (globalUnitIndex + 1) % 3 === 0;
                 const id = lessonIdFor(profile.targetLanguage, level, unit.index);
                 const result = progress.results[id];
                 const unlocked = isLessonUnlocked(level, unit.index);
@@ -144,7 +173,8 @@ export function HomeScreen() {
                   const stepsDone = progress.stepsDone[id] ?? 0;
                   const currentStep = Math.min(stepsDone, 3);
                   return (
-                    <View key={id} style={{ alignItems: 'center', marginVertical: 8 }}>
+                    <React.Fragment key={id}>
+                    <View style={{ alignItems: 'center', marginVertical: 8 }}>
                       <Text style={{
                         marginTop: 8,
                         fontWeight: '900',
@@ -224,11 +254,14 @@ export function HomeScreen() {
                         </Pressable>
                       )}
                     </View>
+                    {showReviewAfter && reviewNode()}
+                    </React.Fragment>
                   );
                 }
 
                 return (
-                  <View key={id} style={{ alignItems: 'center', marginVertical: 10 }}>
+                  <React.Fragment key={id}>
+                  <View style={{ alignItems: 'center', marginVertical: 10 }}>
                     {isCurrent && (
                       <View style={{
                         transform: [{ translateX: offset }],
@@ -315,6 +348,8 @@ export function HomeScreen() {
                       </Pressable>
                     )}
                   </View>
+                  {showReviewAfter && reviewNode()}
+                  </React.Fragment>
                 );
               })}
             </View>

@@ -14,6 +14,7 @@ import { LessonScreen } from '../screens/LessonScreen';
 import { ConversationScreen } from '../screens/ConversationScreen';
 import { FeedbackScreen } from '../screens/FeedbackScreen';
 import { ReviewMistakesScreen } from '../screens/ReviewMistakesScreen';
+import { ReviewScreen } from '../screens/ReviewScreen';
 import { PremiumScreen } from '../screens/PremiumScreen';
 import type { RootStackParamList } from './types';
 
@@ -86,6 +87,7 @@ export function RootNavigator() {
               options={{ title: 'Il tuo report', headerBackVisible: false, gestureEnabled: false }}
             />
             <Stack.Screen name="ReviewMistakes" component={ReviewMistakesScreen} options={{ title: 'Ripasso errori' }} />
+            <Stack.Screen name="Review" component={ReviewScreen} options={{ title: 'Ripasso 💪' }} />
             <Stack.Screen name="Premium" component={PremiumScreen} options={{ title: 'Premium', presentation: 'modal' }} />
           </>
         )}

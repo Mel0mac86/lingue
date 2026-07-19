@@ -1,9 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import type { Exercise } from '../types';
 import { useTheme } from '../theme';
 import { Body, Button, FeedbackBanner, Muted } from './ui';
-import { speak } from '../services/speech';
+import {
+  cancelRecording, speak, startRecording, stopRecordingAndTranscribe,
+} from '../services/speech';
+import { getGroqApiKey } from '../services/config';
 import { playSfx } from '../services/sfx';
 
 export const KIND_LABELS: Record<Exercise['kind'], { label: string; emoji: string }> = {
@@ -13,6 +16,8 @@ export const KIND_LABELS: Record<Exercise['kind'], { label: string; emoji: strin
   wordbank: { label: 'Componi la frase', emoji: '🧩' },
   comprehension: { label: 'Comprensione', emoji: '💡' },
   quiz: { label: 'Quiz', emoji: '🏁' },
+  speaking: { label: 'Ascolta e ripeti', emoji: '🎤' },
+  pairs: { label: 'Abbina le coppie', emoji: '🃏' },
 };
 
 export function normalizeAnswer(s: string): string {
@@ -34,6 +39,21 @@ function shuffled(words: string[], seed: string): string[] {
   return arr.sort((a, b) => (a.k % 997) - (b.k % 997)).map((x) => x.w);
 }
 
+/** Word-by-word comparison between the target phrase and the transcript. */
+export function compareSpoken(target: string, said: string): {
+  words: { w: string; ok: boolean }[]; ratio: number;
+} {
+  const targetWords = normalizeAnswer(target).split(' ').filter(Boolean);
+  const pool = normalizeAnswer(said).split(' ').filter(Boolean);
+  const words = targetWords.map((w) => {
+    const i = pool.indexOf(w);
+    if (i >= 0) { pool.splice(i, 1); return { w, ok: true }; }
+    return { w, ok: false };
+  });
+  const okCount = words.filter((x) => x.ok).length;
+  return { words, ratio: targetWords.length ? okCount / targetWords.length : 0 };
+}
+
 /**
  * Renders one exercise Duolingo-style: chunky option cards / word bank,
  * a CHECK button, then a green/red bottom banner before moving on.
@@ -53,12 +73,97 @@ export function ExerciseView({
 
   const isChoice = !!exercise.choices?.length;
   const isBank = exercise.kind === 'wordbank' && !!exercise.words?.length;
+  const isPairs = exercise.kind === 'pairs' && !!exercise.pairs?.length;
+  const isSpeaking = exercise.kind === 'speaking';
   const kind = KIND_LABELS[exercise.kind];
 
   const bank = useMemo(
     () => (isBank ? shuffled(exercise.words!, exercise.id) : []),
     [isBank, exercise.words, exercise.id],
   );
+
+  // ── Pairs (matching) state ─────────────────────────────────────────────
+  const pairCount = exercise.pairs?.length ?? 0;
+  const leftOrder = useMemo(
+    () => (isPairs
+      ? shuffled(exercise.pairs!.map((_, i) => String(i)), exercise.id + 'L').map(Number)
+      : []),
+    [isPairs, exercise.pairs, exercise.id],
+  );
+  const rightOrder = useMemo(
+    () => (isPairs
+      ? shuffled(exercise.pairs!.map((_, i) => String(i)), exercise.id + 'R').map(Number)
+      : []),
+    [isPairs, exercise.pairs, exercise.id],
+  );
+  const [leftSel, setLeftSel] = useState<number | null>(null);
+  const [matchedPairs, setMatchedPairs] = useState<number[]>([]);
+  const [wrongFlash, setWrongFlash] = useState<[number, number] | null>(null);
+
+  const onPairTap = (side: 'left' | 'right', pairIdx: number) => {
+    if (matchedPairs.includes(pairIdx) || checked !== null) return;
+    if (side === 'left') { setLeftSel(pairIdx); return; }
+    if (leftSel === null) return;
+    if (leftSel === pairIdx) {
+      const next = [...matchedPairs, pairIdx];
+      setMatchedPairs(next);
+      setLeftSel(null);
+      playSfx('correct');
+      if (next.length === pairCount) setChecked(true);
+    } else {
+      playSfx('wrong');
+      setWrongFlash([leftSel, pairIdx]);
+      setLeftSel(null);
+      setTimeout(() => setWrongFlash(null), 550);
+    }
+  };
+
+  // ── Speaking (pronunciation) state ─────────────────────────────────────
+  const [recState, setRecState] = useState<'idle' | 'rec' | 'busy'>('idle');
+  const [attempt, setAttempt] = useState<null | {
+    said: string; words: { w: string; ok: boolean }[]; ratio: number;
+  }>(null);
+  const [sttError, setSttError] = useState<string | null>(null);
+  const [hasKey, setHasKey] = useState<boolean | null>(null);
+  const recRef = useRef(false);
+
+  useEffect(() => {
+    if (isSpeaking) getGroqApiKey().then((k) => setHasKey(!!k)).catch(() => setHasKey(false));
+    return () => { if (recRef.current) { cancelRecording(); recRef.current = false; } };
+  }, [isSpeaking]);
+
+  const onMicPress = async () => {
+    setSttError(null);
+    if (recState === 'idle') {
+      try {
+        await startRecording();
+        recRef.current = true;
+        setRecState('rec');
+      } catch {
+        setSttError('Microfono non disponibile: controlla i permessi del browser.');
+      }
+      return;
+    }
+    if (recState !== 'rec') return;
+    setRecState('busy');
+    try {
+      const said = await stopRecordingAndTranscribe(speechTag);
+      recRef.current = false;
+      const { words, ratio } = compareSpoken(exercise.answer, said);
+      setAttempt({ said, words, ratio });
+      if (ratio >= 0.7) {
+        playSfx('correct');
+        setChecked(true);
+      } else {
+        playSfx('wrong');
+      }
+    } catch (e) {
+      recRef.current = false;
+      setSttError(String((e as Error)?.message ?? e));
+    } finally {
+      setRecState('idle');
+    }
+  };
 
   const composed = picked.map((i) => bank[i]).join(' ');
 
@@ -95,6 +200,18 @@ export function ExerciseView({
           }}
           >
             <Body style={{ fontStyle: 'italic' }}>{exercise.passage}</Body>
+          </View>
+        ) : null}
+
+        {isSpeaking ? (
+          <View style={{
+            backgroundColor: t.colors.surfaceAlt, borderRadius: 14, padding: 14, marginBottom: 12,
+            borderWidth: 2, borderColor: t.colors.border,
+          }}
+          >
+            <Body style={{ fontWeight: '900', fontSize: 18 * t.fontScale }}>
+              {exercise.answer}
+            </Body>
           </View>
         ) : null}
 
@@ -230,8 +347,132 @@ export function ExerciseView({
           </View>
         )}
 
+        {/* Pairs: tap a word, then its translation */}
+        {isPairs && (
+          <View style={{ flexDirection: 'row' }}>
+            {([['left', leftOrder], ['right', rightOrder]] as const).map(([side, order]) => (
+              <View key={side} style={{ flex: 1, marginHorizontal: 4 }}>
+                {order.map((pairIdx) => {
+                  const label = side === 'left'
+                    ? exercise.pairs![pairIdx].left
+                    : exercise.pairs![pairIdx].right;
+                  const done = matchedPairs.includes(pairIdx);
+                  const isSel = side === 'left' && leftSel === pairIdx;
+                  const isWrong = wrongFlash !== null
+                    && ((side === 'left' && wrongFlash[0] === pairIdx)
+                      || (side === 'right' && wrongFlash[1] === pairIdx));
+                  return (
+                    <Pressable
+                      key={`${side}-${pairIdx}`}
+                      disabled={done || checked !== null}
+                      onPress={() => onPairTap(side, pairIdx)}
+                      style={{
+                        borderWidth: 2,
+                        borderBottomWidth: done ? 2 : 4,
+                        borderColor: isWrong ? t.colors.danger
+                          : done ? t.colors.success
+                            : isSel ? t.colors.blue : t.colors.border,
+                        backgroundColor: isWrong ? t.colors.dangerSoft
+                          : done ? t.colors.successSoft
+                            : isSel ? `${t.colors.blue}18` : t.colors.surface,
+                        borderRadius: 14,
+                        padding: 13,
+                        marginBottom: 10,
+                        opacity: done ? 0.55 : 1,
+                      }}
+                    >
+                      <Text style={{
+                        color: t.colors.text,
+                        fontWeight: isSel ? '900' : '700',
+                        fontSize: 15 * t.fontScale,
+                        textAlign: 'center',
+                      }}
+                      >
+                        {done ? '✓ ' : ''}{label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Speaking: record, transcribe, per-word colour feedback */}
+        {isSpeaking && (
+          <View style={{ alignItems: 'center' }}>
+            {hasKey === false ? (
+              <Muted style={{ textAlign: 'center', marginTop: 8 }}>
+                ⚠️ Per l’esercizio di pronuncia serve la chiave API Groq
+                (Profilo → Impostazioni AI). Puoi saltarlo senza penalità.
+              </Muted>
+            ) : (
+              <Pressable
+                disabled={recState === 'busy' || checked !== null}
+                onPress={onMicPress}
+                style={{
+                  marginTop: 10,
+                  width: 92,
+                  height: 92,
+                  borderRadius: 46,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: recState === 'rec' ? t.colors.danger : t.colors.primary,
+                  borderBottomWidth: 6,
+                  borderColor: recState === 'rec' ? '#C93A3A' : t.colors.primaryEdge,
+                  opacity: recState === 'busy' ? 0.6 : 1,
+                }}
+              >
+                <Text style={{ fontSize: 38 }}>
+                  {recState === 'rec' ? '⏹' : recState === 'busy' ? '⏳' : '🎤'}
+                </Text>
+              </Pressable>
+            )}
+            <Muted style={{ marginTop: 8, textAlign: 'center' }}>
+              {recState === 'rec' ? 'Sto ascoltando… tocca ⏹ quando hai finito.'
+                : recState === 'busy' ? 'Sto controllando la tua pronuncia…'
+                  : 'Tocca 🎤, leggi la frase ad alta voce, poi tocca ⏹.'}
+            </Muted>
+            {sttError ? (
+              <Muted style={{ color: t.colors.danger, marginTop: 8, textAlign: 'center' }}>
+                {sttError}
+              </Muted>
+            ) : null}
+            {attempt && checked === null ? (
+              <View style={{
+                marginTop: 14, alignSelf: 'stretch',
+                backgroundColor: t.colors.surfaceAlt, borderRadius: 14, padding: 12,
+                borderWidth: 2, borderColor: t.colors.border,
+              }}
+              >
+                <Muted style={{ fontWeight: '800', marginBottom: 6 }}>
+                  Ho capito: “{attempt.said.trim() || '…'}” — {Math.round(attempt.ratio * 100)}%
+                </Muted>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                  {attempt.words.map((x, i) => (
+                    <Text
+                      key={i}
+                      style={{
+                        color: x.ok ? t.colors.success : t.colors.danger,
+                        fontWeight: '800',
+                        fontSize: 16 * t.fontScale,
+                        marginRight: 6,
+                      }}
+                    >
+                      {x.w}
+                    </Text>
+                  ))}
+                </View>
+                <Muted style={{ marginTop: 6 }}>
+                  Le parole rosse non si sono sentite bene: riprova con calma! 💪
+                </Muted>
+              </View>
+            ) : null}
+          </View>
+        )}
+
         {/* Free writing */}
-        {!isChoice && !isBank && (
+        {!isChoice && !isBank && !isPairs && !isSpeaking && (
           <TextInput
             value={typed}
             onChangeText={setTyped}
@@ -260,15 +501,26 @@ export function ExerciseView({
         ) : null}
       </View>
 
-      {/* Bottom bar: CHECK or feedback banner */}
+      {/* Bottom bar: CHECK (or skip for speaking) or feedback banner */}
       {checked === null ? (
-        <View style={{ padding: t.spacing.lg }}>
-          <Button title="Controlla" onPress={check} disabled={!canCheck} />
-        </View>
+        isPairs ? null : (
+          <View style={{ padding: t.spacing.lg }}>
+            {isSpeaking ? (
+              <Button
+                title="Salta: non posso parlare ora"
+                variant="ghost"
+                onPress={() => onDone(true)}
+              />
+            ) : (
+              <Button title="Controlla" onPress={check} disabled={!canCheck} />
+            )}
+          </View>
+        )
       ) : (
         <FeedbackBanner
           correct={checked}
-          correctAnswer={isChoice ? exercise.choices![Number(exercise.answer)] : exercise.answer}
+          correctAnswer={isPairs ? undefined
+            : isChoice ? exercise.choices![Number(exercise.answer)] : exercise.answer}
           onContinue={() => onDone(checked)}
         />
       )}
