@@ -367,6 +367,12 @@ interface AnimalCfg {
   hat?: string;
   /** Elongated pointy snout (mouse). */
   pointySnout?: boolean;
+  /** Dorsal fin on top of the head (orca), in this colour. */
+  dorsalFin?: string;
+  /** Side pectoral flippers on the body (orca), in this colour. */
+  flippers?: string;
+  /** Smooth muzzle-less face with a white lower jaw (orca): no snout/nose. */
+  smoothFace?: boolean;
 }
 
 const ANIMAL_CFG: Record<Exclude<AvatarSpecies, 'human'>, AnimalCfg> = {
@@ -382,6 +388,7 @@ const ANIMAL_CFG: Record<Exclude<AvatarSpecies, 'human'>, AnimalCfg> = {
   beaver: { ear: 'round', earScale: 0.62, buckTeeth: true, headScale: [1.04, 0.98, 0.98] },
   owl: { ear: 'none', beak: true, facePatch: '#F3E9D7', hat: '#E8862E', headScale: [1, 1, 0.96] },
   raccoon: { ear: 'pointy', eyePatch: '#4A3B33', facePatch: '#E9E2D8', whiskers: true, headScale: [1, 0.96, 0.96] },
+  orca: { ear: 'none', dorsalFin: '#15151B', flippers: '#15151B', smoothFace: true, headScale: [1.05, 0.9, 1.02] },
 };
 
 function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObject<AnimState> }) {
@@ -410,6 +417,18 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
         <sphereGeometry args={[0.5, 24, 24]} />
         <meshStandardMaterial color={muzzle} roughness={0.85} />
       </mesh>
+      {/* pectoral flippers (orca) */}
+      {cfg.flippers && [-1, 1].map((s) => (
+        <mesh
+          key={`flip${s}`}
+          position={[0.66 * s, -1.4, 0.18]}
+          rotation={[0.25, 0, 0.55 * s]}
+          scale={[0.32, 0.12, 0.5]}
+        >
+          <sphereGeometry args={[0.3, 16, 16]} />
+          <meshStandardMaterial color={cfg.flippers} roughness={0.8} />
+        </mesh>
+      ))}
 
       <group ref={rig.head}>
         {/* head */}
@@ -515,6 +534,14 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
           </>
         )}
 
+        {/* dorsal fin (orca) */}
+        {cfg.dorsalFin && (
+          <mesh position={[0, 0.58, -0.14]} rotation={[-0.4, 0, 0]} scale={[0.62, 1, 0.16]}>
+            <coneGeometry args={[0.28, 0.66, 24]} />
+            <meshStandardMaterial color={cfg.dorsalFin} roughness={0.7} />
+          </mesh>
+        )}
+
         {/* big cute eyes */}
         <group ref={rig.pupils}>
           <Eye x={-0.21} y={0.15} z={0.52} rig={rig} side="L" lidColor={cfg.eyePatch ?? fur} irisColor="#2E1D12" size={1.5} lashes={def.gender === 'female'} />
@@ -539,6 +566,43 @@ function AnimalHead({ def, anim }: { def: AvatarDef; anim: React.MutableRefObjec
               <meshStandardMaterial color="#F59E0B" roughness={0.5} />
             </mesh>
           </group>
+        ) : cfg.smoothFace ? (
+          <>
+            {/* iconic white eye patches (orca), tilted up-and-out */}
+            {[-1, 1].map((s) => (
+              <mesh
+                key={`opatch${s}`}
+                position={[0.26 * s, 0.2, 0.5]}
+                rotation={[0, 0, -0.45 * s]}
+                scale={[0.66, 1.3, 0.55]}
+              >
+                <sphereGeometry args={[0.15, 20, 20]} />
+                <meshStandardMaterial color="#F4F4F6" roughness={0.85} />
+              </mesh>
+            ))}
+            {/* white lower face / chin (orca two-tone) */}
+            <mesh position={[0, -0.26, 0.4]} scale={[0.9, 0.62, 0.7]}>
+              <sphereGeometry args={[0.27, 24, 24]} />
+              <meshStandardMaterial color={muzzle} roughness={0.85} />
+            </mesh>
+            {/* mouth cavity */}
+            <mesh position={[0, -0.17, 0.54]} scale={[1.3, 0.5, 0.5]}>
+              <sphereGeometry args={[0.1, 16, 16]} />
+              <meshStandardMaterial color="#5E1F19" roughness={0.6} />
+            </mesh>
+            {/* wide smile line */}
+            <mesh ref={rig.smile} position={[0, -0.14, 0.6]} rotation={[-0.15, 0, Math.PI]} scale={[1.5, 0.8, 0.5]}>
+              <torusGeometry args={[0.11, 0.018, 8, 20, Math.PI * 0.9]} />
+              <meshStandardMaterial color="#2A2A30" roughness={0.6} />
+            </mesh>
+            {/* jaw: white chin for lip sync */}
+            <group ref={rig.jaw} position={[0, -0.24, 0.1]}>
+              <mesh position={[0, -0.06, 0.36]} scale={[0.9, 0.4, 0.6]}>
+                <sphereGeometry args={[0.2, 20, 20]} />
+                <meshStandardMaterial color={muzzle} roughness={0.85} />
+              </mesh>
+            </group>
+          </>
         ) : (
           <>
             <mesh

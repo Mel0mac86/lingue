@@ -118,6 +118,11 @@ export const EXTRA_ANIMALS: AvatarDef[] = [
     personality: 'procione smart col maglione viola: sembra sempre in videochiamata, parla di tecnologia',
     accent: 'neutro', color: '#6D3F8E', skin: '#E9E2D8', hair: '#9A938B', emoji: '🦝', voicePitch: 1.05,
   },
+  {
+    id: 'willy', name: 'Willy', gender: 'male', ageLook: 9, role: 'friend', species: 'orca',
+    personality: 'orca gigante e gentile dell’oceano: fa spruzzi d’acqua, adora tuffi, giochi e avventure nel mare',
+    accent: 'neutro', color: '#1B1B22', skin: '#FFFFFF', hair: '#1B1B22', emoji: '🐋', voicePitch: 0.9,
+  },
 ];
 
 export const ROLE_LABELS: Record<AvatarRole, string> = {

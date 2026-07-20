@@ -202,7 +202,7 @@ export type AvatarRole =
 /** 'human' renders the realistic head; any other value renders that animal. */
 export type AvatarSpecies =
   | 'human' | 'fox' | 'bear' | 'cat' | 'dog' | 'rabbit' | 'panda' | 'lion' | 'penguin'
-  | 'mouse' | 'beaver' | 'owl' | 'raccoon';
+  | 'mouse' | 'beaver' | 'owl' | 'raccoon' | 'orca';
 
 export interface AvatarDef {
   id: string;
