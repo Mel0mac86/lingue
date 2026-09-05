@@ -24,6 +24,7 @@ export const LANGUAGES: LanguageDef[] = [
   { code: 'ja', name: 'Giapponese', nativeName: '日本語', flag: '🇯🇵', speechTag: 'ja-JP' },
   { code: 'zh', name: 'Cinese', nativeName: '中文', flag: '🇨🇳', speechTag: 'zh-CN' },
   { code: 'ko', name: 'Coreano', nativeName: '한국어', flag: '🇰🇷', speechTag: 'ko-KR' },
+  { code: 'pl', name: 'Polacco', nativeName: 'Polski', flag: '🇵🇱', speechTag: 'pl-PL' },
 ];
 
 export const languageByCode = (code: LanguageCode): LanguageDef =>
