@@ -180,6 +180,65 @@ export const SEED_LESSONS: Lesson[] = [
     ],
     conversationBrief: 'Conversazione sulla famiglia: chiedere e descrivere la famiglia (Do you have any brothers or sisters?, This is my..., aggettivi possessivi, genitivo sassone), età dei familiari (ripasso numeri), descrizioni semplici (tall/short). Frasi brevi e incoraggiamento continuo.',
   },
+  {
+    id: 'pl-A1-0',
+    language: 'pl',
+    level: 'A1',
+    unitIndex: 0,
+    title: 'Saluta e presentati',
+    topic: 'greetings',
+    vocabulary: [
+      { term: 'cześć', translation: 'ciao (informale)', phonetic: '≈ “cesc’” (cesh-ć)', example: 'Cześć! Jak się masz?', exampleTranslation: 'Ciao! Come stai?' },
+      { term: 'dzień dobry', translation: 'buongiorno', phonetic: '≈ “gen dòbri”', example: 'Dzień dobry, Anno!', exampleTranslation: 'Buongiorno, Anna!' },
+      { term: 'do widzenia', translation: 'arrivederci', phonetic: '≈ “do vidzègna”', example: 'Do widzenia! Do jutra.', exampleTranslation: 'Arrivederci! A domani.' },
+      { term: 'imię', translation: 'nome', phonetic: '≈ “ìmie”', example: 'Mam na imię Marek.', exampleTranslation: 'Mi chiamo Marek.' },
+      { term: 'miło mi', translation: 'piacere', phonetic: '≈ “mìuo mi”', example: 'Miło mi cię poznać!', exampleTranslation: 'Piacere di conoscerti!' },
+      { term: 'proszę', translation: 'per favore / prego', phonetic: '≈ “pròsce”', example: 'Powtórz, proszę.', exampleTranslation: 'Ripeti, per favore.' },
+      { term: 'dziękuję', translation: 'grazie', phonetic: '≈ “gien-kùie”', example: 'Dziękuję bardzo!', exampleTranslation: 'Grazie mille!' },
+      { term: 'tak / nie', translation: 'sì / no', phonetic: '≈ “tak / gne”', example: 'Tak, jestem z Włoch.', exampleTranslation: 'Sì, sono italiano.' },
+    ],
+    expressions: [
+      { phrase: 'Jak się masz?', translation: 'Come stai?', usage: 'Domanda standard dopo un saluto (informale).' },
+      { phrase: 'Dobrze, dziękuję. A ty?', translation: 'Bene, grazie. E tu?', usage: 'Risposta cortese a "Jak się masz?".' },
+      { phrase: 'Jak masz na imię?', translation: 'Come ti chiami?', usage: 'Letteralmente: "come hai per nome?".' },
+      { phrase: 'Miło mi cię poznać!', translation: 'Piacere di conoscerti!', usage: 'Quando incontri qualcuno per la prima volta.' },
+      { phrase: 'Skąd jesteś?', translation: 'Di dove sei?', usage: 'Per chiedere la provenienza.' },
+    ],
+    grammar: [
+      {
+        title: 'Il verbo essere: być (io / tu)',
+        explanation: 'In polacco "essere" è "być". Al presente: ja jestem (io sono), ty jesteś (tu sei). Il pronome (ja, ty) spesso si omette perché il verbo indica già la persona: "Jestem Marek".',
+        examples: [
+          { sample: 'Jestem Marek.', translation: 'Io sono Marek.' },
+          { sample: 'Ty jesteś moim przyjacielem.', translation: 'Tu sei mio amico.' },
+          { sample: 'Jesteś z Włoch?', translation: 'Sei italiano/a? (Sei dall’Italia?)' },
+        ],
+      },
+      {
+        title: 'I pronomi personali',
+        explanation: 'I pronomi soggetto sono: ja (io), ty (tu), on (lui), ona (lei), my (noi), wy (voi), oni/one (loro). In polacco si usano soprattutto per enfasi: di solito basta il verbo.',
+        examples: [
+          { sample: 'Ona jest nauczycielką.', translation: 'Lei è un’insegnante.' },
+          { sample: 'My jesteśmy studentami.', translation: 'Noi siamo studenti.' },
+        ],
+      },
+    ],
+    exercises: [
+      { id: 'pl-A1-0-l1', kind: 'listening', prompt: 'Ascolta e scegli cosa senti.', audioText: 'Dzień dobry! Miło mi cię poznać.', choices: ['Dzień dobry! Miło mi cię poznać.', 'Do widzenia! Do jutra.', 'Cześć! Jak się masz?'], answer: '0' },
+      { id: 'pl-A1-0-l2', kind: 'listening', prompt: 'Ascolta la domanda e scegli la risposta corretta.', audioText: 'Jak masz na imię?', choices: ['Jestem z Włoch.', 'Mam na imię Marek.', 'Dobrze, dziękuję.'], answer: '1' },
+      { id: 'pl-A1-0-r1', kind: 'reading', prompt: 'Leggi e rispondi: di dove è Anna?', passage: 'Cześć! Mam na imię Anna. Jestem z Hiszpanii. Miło mi!', choices: ['Italia', 'Spagna', 'Francia'], answer: '1' },
+      { id: 'pl-A1-0-w1', kind: 'writing', prompt: 'Scrivi in polacco: "Grazie!"', answer: 'dziękuję', hint: 'Puoi scriverlo senza segni diacritici: "dziekuje".' },
+      { id: 'pl-A1-0-w2', kind: 'writing', prompt: 'Completa: "___ dobry!" (Buongiorno)', answer: 'dzień', hint: 'Anche "dzien" va bene.' },
+      { id: 'pl-A1-0-b1', kind: 'wordbank', prompt: 'Componi la frase: "Mi chiamo Anna."', words: ['Mam', 'na', 'imię', 'Anna', 'jestem', 'ty'], answer: 'Mam na imię Anna' },
+      { id: 'pl-A1-0-b2', kind: 'wordbank', prompt: 'Componi la frase: "Come stai?"', words: ['Jak', 'się', 'masz', 'skąd', 'jesteś'], answer: 'Jak się masz' },
+      { id: 'pl-A1-0-c1', kind: 'comprehension', prompt: 'Qualcuno dice: "Dobrze, dziękuję. A ty?" Cosa ti sta chiedendo di rimando?', choices: ['Il tuo nome', 'Come stai tu', 'Di dove sei'], answer: '1' },
+      { id: 'pl-A1-0-q1', kind: 'quiz', prompt: '"Tu sei" in polacco si dice:', choices: ['ty jest', 'ty jesteś', 'ty jestem'], answer: '1' },
+      { id: 'pl-A1-0-q2', kind: 'quiz', prompt: 'Come si chiede il nome a qualcuno?', choices: ['Jak masz na imię?', 'Jak się masz?', 'Skąd jesteś?'], answer: '0' },
+      { id: 'pl-A1-0-q3', kind: 'quiz', prompt: '"Grazie" si dice:', choices: ['Proszę', 'Dziękuję', 'Cześć'], answer: '1' },
+      { id: 'pl-A1-0-q4', kind: 'quiz', prompt: 'Completa: "Ja ___ z Włoch." (io sono)', choices: ['jest', 'jesteś', 'jestem'], answer: '2' },
+    ],
+    conversationBrief: 'Prima conversazione in polacco: salutare, chiedere e dire il nome, chiedere "Jak się masz?", dire la provenienza. Usa SOLO: cześć, dzień dobry, do widzenia, Jak masz na imię?, Mam na imię..., Miło mi cię poznać, Jak się masz?, Dobrze dziękuję, Skąd jesteś?, Jestem z... Frasi di massimo 5-7 parole, molto lente e incoraggianti.',
+  },
 ];
 
 export const seedLessonById = (id: string): Lesson | undefined =>
